@@ -37,7 +37,7 @@ public class CardClient {
         this.deckServiceAddress = deckServiceAddress;
     }
 
-    public @NotNull Optional<Card> createEmptyDefaultCard(@NotNull Deck deck, @NotNull CardType cardType) {
+    public @NotNull Optional<Card> createEmptyCard(@NotNull Deck deck, @NotNull CardType cardType) {
         CardRequestDto requestDto = new CardRequestDto(
                 deck.getDeckId(), CardTypeDto.fromCardType(cardType), null, null, null);
 
