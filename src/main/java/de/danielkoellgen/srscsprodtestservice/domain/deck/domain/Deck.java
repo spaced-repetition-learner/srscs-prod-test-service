@@ -21,6 +21,7 @@ public class Deck {
     private @NotNull UUID deckId;
 
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private @NotNull User user;
 
     @Getter
