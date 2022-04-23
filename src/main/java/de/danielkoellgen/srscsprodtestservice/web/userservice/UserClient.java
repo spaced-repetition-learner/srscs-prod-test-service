@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -27,21 +28,26 @@ public class UserClient {
 
     private final WebClient userClient;
 
+    private final String userServiceAddress;
+
     private final Logger logger = LoggerFactory.getLogger(UserClient.class);
 
     @Autowired
-    public UserClient(@Value("//${app.userService.address}") String userServiceAddress) {
-        this.userClient = WebClient.create(userServiceAddress);
+    public UserClient(@Value("${app.userService.address}") String userServiceAddress) {
+        this.userClient = WebClient.create();
+        this.userServiceAddress = userServiceAddress;
     }
 
     public @NotNull Optional<User> createUser(Username username, MailAddress mail, Name firstName, Name lastName) {
         UserRequestDto requestDto = new UserRequestDto(
                 username.getUsername(), mail.getMailAddress(), firstName.getName(), lastName.getName());
+        logger.debug("Requesting User-Service to create a new User. Address is POST {}",
+                userServiceAddress+"/users");
+        logger.trace("{}", requestDto);
 
         try {
-            UserResponseDto responseDto = userClient.post().uri("/users")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
+            UserResponseDto responseDto = userClient.post().uri(userServiceAddress + "/users")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .bodyValue(requestDto)
                     .retrieve()
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
@@ -49,14 +55,18 @@ public class UserClient {
                     .bodyToMono(UserResponseDto.class)
                     .block();
             assert responseDto != null;
+            logger.debug("Request successful.");
+            logger.trace("{}", responseDto);
             return Optional.of(
-                    new User(responseDto.userId(), responseDto.isActive())
+                    new User(responseDto.userId(), username, responseDto.isActive())
             );
 
         } catch (WebClientResponseException e) {
+            logger.error("Request failed. {}", e.getMessage());
             return Optional.empty();
 
         } catch (Exception e) {
+            logger.error("Request failed. {}", e.getMessage());
             return Optional.empty();
         }
     }
