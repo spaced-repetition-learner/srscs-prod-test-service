@@ -2,11 +2,9 @@ package de.danielkoellgen.srscsprodtestservice.web.deckservice;
 
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.Card;
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.CardType;
+import de.danielkoellgen.srscsprodtestservice.domain.card.domain.ReviewAction;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
-import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.CardRequestDto;
-import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.CardResponseDto;
-import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.CardTypeDto;
-import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.DeckResponseDto;
+import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.*;
 import de.danielkoellgen.srscsprodtestservice.web.userservice.UserClient;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -38,7 +36,7 @@ public class CardClient {
 
     public @NotNull Optional<Card> createEmptyDefaultCard(@NotNull Deck deck, @NotNull CardType cardType) {
         CardRequestDto requestDto = new CardRequestDto(
-                deck.getDeckId(), CardTypeDto.fromCardType(CardType.DEFAULT), null, null, null);
+                deck.getDeckId(), CardTypeDto.fromCardType(cardType), null, null, null);
 
         try {
             CardResponseDto responseDto = cardClient.post().uri("/cards")
@@ -52,6 +50,53 @@ public class CardClient {
                     .block();
             assert responseDto != null;
             return Optional.of(new Card(responseDto.cardId(), deck, responseDto.getIsActive()));
+
+        } catch (WebClientResponseException e) {
+            return Optional.empty();
+
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public void reviewCard(@NotNull Card card, @NotNull ReviewAction reviewAction) {
+        ReviewRequestDto requestDto = new ReviewRequestDto(ReviewActionDto.fromReviewAction(reviewAction));
+
+        try {
+            cardClient.post().uri("/cards/"+card.getCardId()+"/scheduler/activity/review")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestDto)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error));
+
+        } catch (WebClientResponseException e) {
+            return;
+
+        } catch (Exception e) {
+            return;
+        }
+    }
+
+    public @NotNull Optional<Card> editCardAsEmpty(@NotNull Card rootCard, @NotNull CardType cardType) {
+        CardRequestDto requestDto = new CardRequestDto(
+                rootCard.getDeck().getDeckId(),
+                CardTypeDto.fromCardType(cardType),
+                null, null, null
+        );
+
+        try {
+            CardResponseDto responseDto = cardClient.post().uri("/cards/"+rootCard.getCardId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestDto)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(CardResponseDto.class)
+                    .block();
+            assert responseDto != null;
+            return Optional.of(new Card(responseDto.cardId(), rootCard.getDeck(), responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
             return Optional.empty();
