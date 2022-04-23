@@ -74,13 +74,31 @@ public class CollabClient {
         UUID collabId = collaboration.getCollaborationId();
         UUID participantId = participant.getParticipantId();
         try {
-            collabClient.post().uri("/collaborations/"+collabId+"/participants/"+participantId)
+            collabClient.post().uri("/collaborations/"+collabId+"/participants/"+participantId+"/state")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error));
             return true;
+        } catch (WebClientResponseException e) {
+            return false;
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public Boolean endCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
+        UUID collabId = collaboration.getCollaborationId();
+        UUID participantId = participant.getParticipantId();
+        try {
+            collabClient.delete().uri("/collaborations/"+collabId+"/participants/"+participantId)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error));
+            return true;
+
         } catch (WebClientResponseException e) {
             return false;
 
