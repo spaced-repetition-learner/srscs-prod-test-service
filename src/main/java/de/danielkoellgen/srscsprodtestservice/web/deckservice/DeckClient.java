@@ -28,18 +28,25 @@ public class DeckClient {
 
     private final WebClient deckClient;
 
+    private final String deckServiceAddress;
+
     private final Logger logger = LoggerFactory.getLogger(DeckClient.class);
 
     @Autowired
-    public DeckClient(@Value("//${app.deckService.address}") String deckServiceAddress) {
-        this.deckClient = WebClient.create(deckServiceAddress);
+    public DeckClient(@Value("${app.deckService.address}") String deckServiceAddress) {
+        this.deckClient = WebClient.create();
+        this.deckServiceAddress = deckServiceAddress;
     }
 
     public @NotNull Optional<Deck> createDeck(User user, DeckName deckName) {
         DeckRequestDto requestDto = new DeckRequestDto(user.getUserId(), deckName.getName());
 
+        logger.debug("Requesting Deck-Service to create a new Deck. Address is POST {}",
+                deckServiceAddress+"/decks");
+        logger.trace("{}", requestDto);
+
         try {
-            DeckResponseDto responseDto = deckClient.post().uri("/decks")
+            DeckResponseDto responseDto = deckClient.post().uri(deckServiceAddress + "/decks")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
@@ -49,12 +56,16 @@ public class DeckClient {
                     .bodyToMono(DeckResponseDto.class)
                     .block();
             assert responseDto != null;
+            logger.debug("Request successful.");
+            logger.trace("{}", responseDto);
             return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
 
         } catch (WebClientResponseException e) {
+            logger.error("Request failed. {}", e.getMessage());
             return Optional.empty();
 
         } catch (Exception e) {
+            logger.error("Request failed. {}", e.getMessage());
             return Optional.empty();
         }
     }
