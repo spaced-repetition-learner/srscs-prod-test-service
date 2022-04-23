@@ -1,20 +1,18 @@
 package de.danielkoellgen.srscsprodtestservice.domain.domainprimitive;
 
-import de.danielkoellgen.srscsdeckservice.domain.core.AbstractStringValidation;
+import de.danielkoellgen.srscsprodtestservice.domain.core.AbstractStringValidation;
+import jakarta.persistence.Column;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.data.annotation.PersistenceConstructor;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 @EqualsAndHashCode(callSuper = false)
 public class DeckName extends AbstractStringValidation {
 
     @Getter
-    @Field("deck_name")
+    @Column(name = "name")
     private final String name;
 
-    @PersistenceConstructor
     public DeckName(@NotNull String name) throws Exception {
         validateNameOrThrow(name);
         this.name = name;
