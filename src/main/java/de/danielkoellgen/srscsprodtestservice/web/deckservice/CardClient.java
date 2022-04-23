@@ -27,11 +27,14 @@ public class CardClient {
 
     private final WebClient cardClient;
 
+    private final String deckServiceAddress;
+
     private final Logger logger = LoggerFactory.getLogger(UserClient.class);
 
     @Autowired
     public CardClient(@Value("//${app.userService.address}") String deckServiceAddress) {
-        this.cardClient = WebClient.create(deckServiceAddress);
+        this.cardClient = WebClient.create();
+        this.deckServiceAddress = deckServiceAddress;
     }
 
     public @NotNull Optional<Card> createEmptyDefaultCard(@NotNull Deck deck, @NotNull CardType cardType) {
@@ -39,7 +42,7 @@ public class CardClient {
                 deck.getDeckId(), CardTypeDto.fromCardType(cardType), null, null, null);
 
         try {
-            CardResponseDto responseDto = cardClient.post().uri("/cards")
+            CardResponseDto responseDto = cardClient.post().uri(deckServiceAddress + "/cards")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
@@ -63,7 +66,8 @@ public class CardClient {
         ReviewRequestDto requestDto = new ReviewRequestDto(ReviewActionDto.fromReviewAction(reviewAction));
 
         try {
-            cardClient.post().uri("/cards/"+card.getCardId()+"/scheduler/activity/review")
+            cardClient.post()
+                    .uri(deckServiceAddress+"/cards/" + card.getCardId() + "/scheduler/activity/review")
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
                     .retrieve()
@@ -86,7 +90,7 @@ public class CardClient {
         );
 
         try {
-            CardResponseDto responseDto = cardClient.post().uri("/cards/"+rootCard.getCardId())
+            CardResponseDto responseDto = cardClient.post().uri(deckServiceAddress + "/cards/" + rootCard.getCardId())
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)

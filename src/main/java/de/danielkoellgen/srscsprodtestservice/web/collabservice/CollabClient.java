@@ -28,9 +28,12 @@ public class CollabClient {
 
     private final WebClient collabClient;
 
+    private final String collabServiceAddress;
+
     @Autowired
-    public CollabClient(@Value("//${app.collabService.address}") String collabServiceAddress) {
-        this.collabClient = WebClient.create(collabServiceAddress);
+    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress) {
+        this.collabClient = WebClient.create();
+        this.collabServiceAddress = collabServiceAddress;
     }
 
     public @NotNull Optional<Collaboration> createNewCollaboration(@NotNull List<User> users,
@@ -42,7 +45,8 @@ public class CollabClient {
                 collaborationName.getName()
         );
         try {
-            CollaborationResponseDto responseDto = collabClient.post().uri("/collaborations")
+            CollaborationResponseDto responseDto = collabClient.post()
+                    .uri(collabServiceAddress + "/collaborations")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
@@ -74,7 +78,8 @@ public class CollabClient {
         UUID collabId = collaboration.getCollaborationId();
         UUID participantId = participant.getParticipantId();
         try {
-            collabClient.post().uri("/collaborations/"+collabId+"/participants/"+participantId+"/state")
+            collabClient.post()
+                    .uri(collabServiceAddress + "/collaborations/"+collabId+"/participants/"+participantId+"/state")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
@@ -93,7 +98,7 @@ public class CollabClient {
         UUID collabId = collaboration.getCollaborationId();
         UUID participantId = participant.getParticipantId();
         try {
-            collabClient.delete().uri("/collaborations/"+collabId+"/participants/"+participantId)
+            collabClient.delete().uri(collabServiceAddress + "/collaborations/"+collabId+"/participants/"+participantId)
                     .retrieve()
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error));
