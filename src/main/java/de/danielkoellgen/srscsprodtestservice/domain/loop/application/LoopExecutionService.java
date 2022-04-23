@@ -28,8 +28,10 @@ public class LoopExecutionService implements Runnable {
     }
 
     private void runLoop() {
+        executeStartUp();
+
         if (validateLoopIsStillActive()) {
-            executeIteration();
+            executeRandomBehavior();
 
         } else {
             // TODO: LOG THIS
@@ -47,7 +49,11 @@ public class LoopExecutionService implements Runnable {
         return true;
     }
 
-    private void executeIteration() {
+    private void executeStartUp() {
+        // TODO
+    }
+
+    private void executeRandomBehavior() {
         // TODO
     }
 

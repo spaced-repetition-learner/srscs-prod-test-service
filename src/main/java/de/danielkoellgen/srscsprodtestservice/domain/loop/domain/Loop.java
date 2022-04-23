@@ -1,14 +1,15 @@
 package de.danielkoellgen.srscsprodtestservice.domain.loop.domain;
 
 import de.danielkoellgen.srscsprodtestservice.domain.loop.application.LoopService;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "loops")

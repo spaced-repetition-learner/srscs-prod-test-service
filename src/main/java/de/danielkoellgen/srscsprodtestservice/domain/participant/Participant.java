@@ -2,13 +2,13 @@ package de.danielkoellgen.srscsprodtestservice.domain.participant;
 
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.persistence.*;
 import java.util.UUID;
 
 @Entity

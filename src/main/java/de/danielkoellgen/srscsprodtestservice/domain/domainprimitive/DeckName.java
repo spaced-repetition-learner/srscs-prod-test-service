@@ -1,7 +1,6 @@
 package de.danielkoellgen.srscsprodtestservice.domain.domainprimitive;
 
 import de.danielkoellgen.srscsprodtestservice.domain.core.AbstractStringValidation;
-import jakarta.persistence.Column;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 public class DeckName extends AbstractStringValidation {
 
     @Getter
-    @Column(name = "name")
     private final String name;
 
     public DeckName(@NotNull String name) throws Exception {

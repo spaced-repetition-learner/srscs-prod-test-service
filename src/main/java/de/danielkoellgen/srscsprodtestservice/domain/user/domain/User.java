@@ -1,12 +1,12 @@
 package de.danielkoellgen.srscsprodtestservice.domain.user.domain;
 
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 import org.jetbrains.annotations.NotNull;
 
+import javax.persistence.*;
 import java.util.UUID;
 
 @Entity
@@ -29,8 +29,9 @@ public class User {
     private @NotNull Boolean isActive;
 
 
-    public User(@NotNull UUID userId, @NotNull Boolean isActive) {
+    public User(@NotNull UUID userId, @NotNull Username username, @NotNull Boolean isActive) {
         this.userId = userId;
+        this.username = username;
         this.isActive = isActive;
     }
 }

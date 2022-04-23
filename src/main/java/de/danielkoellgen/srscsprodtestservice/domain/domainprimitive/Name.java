@@ -1,11 +1,13 @@
 package de.danielkoellgen.srscsprodtestservice.domain.domainprimitive;
 
 import de.danielkoellgen.srscsprodtestservice.domain.core.AbstractStringValidation;
-import jakarta.persistence.Embeddable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
 
 @Embeddable
 @EqualsAndHashCode(callSuper = false)
@@ -13,11 +15,20 @@ import org.jetbrains.annotations.NotNull;
 public class Name extends AbstractStringValidation {
 
     @Getter
+    @Column(name = "any_name")
     private String name;
 
     public Name(@NotNull String name) throws Exception {
         validateNameOrThrow(name);
         this.name = name;
+    }
+
+    public static @NotNull Name newName(@NotNull String name) {
+        try {
+            return new Name(name);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     private void validateNameOrThrow(@NotNull String name) throws Exception {

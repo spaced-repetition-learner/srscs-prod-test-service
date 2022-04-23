@@ -1,11 +1,13 @@
 package de.danielkoellgen.srscsprodtestservice.domain.domainprimitive;
 
 import de.danielkoellgen.srscsprodtestservice.domain.core.AbstractStringValidation;
-import jakarta.persistence.Embeddable;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+
+import javax.persistence.Embeddable;
+import java.util.Random;
 
 @Embeddable
 @EqualsAndHashCode(callSuper = false)
@@ -22,6 +24,25 @@ public class MailAddress extends AbstractStringValidation {
         validateMailAddressOrThrow(mailAddress);
         this.mailAddress = mailAddress;
     }
+
+    public static @NotNull MailAddress makeRandomMailAddress() {
+        int leftLimit = 97; // letter 'a'
+        int rightLimit = 122; // letter 'z'
+        int targetStringLength = 10;
+        Random random = new Random();
+
+        String generatedString = random.ints(leftLimit, rightLimit + 1)
+                .limit(targetStringLength)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+
+        try {
+            return new MailAddress(generatedString+"@gmail.com");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize random Username.");
+        }
+    }
+
 
     private void validateMailAddressOrThrow(@NotNull String mailAddress) throws Exception {
         validateRegexOrThrow(mailAddress, pattern, this::mapToException);
