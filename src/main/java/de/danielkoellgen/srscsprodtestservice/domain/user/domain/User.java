@@ -1,9 +1,7 @@
 package de.danielkoellgen.srscsprodtestservice.domain.user.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
@@ -21,6 +19,10 @@ public class User {
     @Column(name = "user_id")
     @Type(type = "uuid-char")
     private @NotNull UUID userId;
+
+    @Getter
+    @Embedded
+    private @NotNull Username username;
 
     @Getter
     @Column(name = "is_active")
