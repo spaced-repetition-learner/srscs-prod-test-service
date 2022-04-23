@@ -21,7 +21,7 @@ public class Deck {
     private @NotNull UUID deckId;
 
     @Getter
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.ALL})
     @JoinColumn(name = "user_id")
     private @NotNull User user;
 
