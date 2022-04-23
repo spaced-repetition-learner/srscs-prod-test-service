@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @Scope("singleton")
@@ -32,7 +33,8 @@ public class CollabClient {
         this.collabClient = WebClient.create(collabServiceAddress);
     }
 
-    public @NotNull Optional<Collaboration> createNewCollaboration(@NotNull List<User> users, @NotNull DeckName collaborationName) {
+    public @NotNull Optional<Collaboration> createNewCollaboration(@NotNull List<User> users,
+            @NotNull DeckName collaborationName) {
         CollaborationRequestDto requestDto = new CollaborationRequestDto(
                 users.stream()
                         .map(x -> x.getUsername().getUsername())
@@ -65,6 +67,25 @@ public class CollabClient {
 
         } catch (Exception e) {
             return Optional.empty();
+        }
+    }
+
+    public Boolean acceptCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
+        UUID collabId = collaboration.getCollaborationId();
+        UUID participantId = participant.getParticipantId();
+        try {
+            collabClient.post().uri("/collaborations/"+collabId+"/participants/"+participantId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error));
+            return true;
+        } catch (WebClientResponseException e) {
+            return false;
+
+        } catch (Exception e) {
+            return false;
         }
     }
 }
