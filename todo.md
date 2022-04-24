@@ -10,7 +10,14 @@ DOMAIN
             Create Collabs      (done)
             Accept Collabs      (done)
         RANDOM BEHAVIOR
-            Review Card
+            Select Action       ()
+            Review Cards        ()
+            Reset Cards         ()
+            Create Cards        (done)
+            Override Cards      (done)
+            Create Decks        (done)
+            Create Collabs      (done)
+            Accept Collabs      (done)
 
 WEB
     USER-Service
@@ -20,13 +27,25 @@ WEB
         Create Card             (done)
         Override Card           (done)
         Review Card             (done)
+        Fetch Card              (done)
     COLLAB-Service
         Start Collaboration     (done)
         Accept Collaboration    (done)
         End Collaboration       (done)
 
+CONTROLLER
+    LOOP
+        Start Loop
+        End Loop
+
 KAFKA
     -
 
+LOGGING
+
 
 # race condition create deck when user created.
+# refactor services
+# supress errors
+# card - isactive?
+# deck - isactive?

@@ -34,4 +34,8 @@ public class Card {
         this.deck = deck;
         this.isActive = isActive;
     }
+
+    public void disableCard() {
+        isActive = false;
+    }
 }
