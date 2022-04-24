@@ -2,6 +2,7 @@ package de.danielkoellgen.srscsprodtestservice.domain.card.application;
 
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.Card;
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.CardType;
+import de.danielkoellgen.srscsprodtestservice.domain.card.domain.ReviewAction;
 import de.danielkoellgen.srscsprodtestservice.domain.card.repository.CardRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.CardClient;
@@ -58,5 +59,10 @@ public class CardService {
         cardRepository.save(rootCard);
         cardRepository.save(newCard.get());
         return newCard.get();
+    }
+
+    public void reviewCard(@NotNull UUID cardId, @NotNull ReviewAction reviewAction) {
+        Card card = cardRepository.findById(cardId).get();
+        cardClient.reviewCard(card, reviewAction);
     }
 }

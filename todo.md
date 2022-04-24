@@ -11,8 +11,8 @@ DOMAIN
             Accept Collabs      (done)
         RANDOM BEHAVIOR
             Select Action       ()
-            Review Cards        ()
-            Reset Cards         ()
+            Review Cards        (done)
+            Create User         (done)
             Create Cards        (done)
             Override Cards      (done)
             Create Decks        (done)
