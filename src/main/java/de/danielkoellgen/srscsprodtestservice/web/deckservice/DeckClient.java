@@ -5,8 +5,6 @@ import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.DeckRequestDto;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.DeckResponseDto;
-import de.danielkoellgen.srscsprodtestservice.web.userservice.UserClient;
-import de.danielkoellgen.srscsprodtestservice.web.userservice.dto.UserResponseDto;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

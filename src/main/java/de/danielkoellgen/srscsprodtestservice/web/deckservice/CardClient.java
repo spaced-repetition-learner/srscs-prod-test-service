@@ -29,10 +29,10 @@ public class CardClient {
 
     private final String deckServiceAddress;
 
-    private final Logger logger = LoggerFactory.getLogger(UserClient.class);
+    private final Logger logger = LoggerFactory.getLogger(CardClient.class);
 
     @Autowired
-    public CardClient(@Value("//${app.userService.address}") String deckServiceAddress) {
+    public CardClient(@Value("${app.deckService.address}") String deckServiceAddress) {
         this.cardClient = WebClient.create();
         this.deckServiceAddress = deckServiceAddress;
     }
@@ -40,6 +40,10 @@ public class CardClient {
     public @NotNull Optional<Card> createEmptyCard(@NotNull Deck deck, @NotNull CardType cardType) {
         CardRequestDto requestDto = new CardRequestDto(
                 deck.getDeckId(), CardTypeDto.fromCardType(cardType), null, null, null);
+
+        logger.debug("Requesting Deck-Service to create a new Card. Address is POST {}",
+                deckServiceAddress+"/cards");
+        logger.trace("{}", requestDto);
 
         try {
             CardResponseDto responseDto = cardClient.post().uri(deckServiceAddress + "/cards")
@@ -52,12 +56,16 @@ public class CardClient {
                     .bodyToMono(CardResponseDto.class)
                     .block();
             assert responseDto != null;
+            logger.debug("Request successful.");
+            logger.trace("{}", responseDto);
             return Optional.of(new Card(responseDto.cardId(), deck, responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
+            logger.error("Request failed. {}", e.getMessage());
             return Optional.empty();
 
         } catch (Exception e) {
+            logger.error("Request failed. {}", e.getMessage());
             return Optional.empty();
         }
     }
