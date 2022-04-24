@@ -1,4 +1,4 @@
-package de.danielkoellgen.srscsprodtestservice.domain.participant;
+package de.danielkoellgen.srscsprodtestservice.domain.participant.domain;
 
 import org.jetbrains.annotations.NotNull;
 

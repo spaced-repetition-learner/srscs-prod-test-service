@@ -1,4 +1,4 @@
-package de.danielkoellgen.srscsprodtestservice.domain.participant;
+package de.danielkoellgen.srscsprodtestservice.domain.participant.domain;
 
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
@@ -23,7 +23,7 @@ public class Participant {
     private @NotNull UUID participantId;
 
     @Getter
-    @OneToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id")
     private @NotNull User user;
 
@@ -32,13 +32,13 @@ public class Participant {
     private @NotNull ParticipantStatus participantStatus;
 
     @Getter
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "deck_id")
     private @Nullable Deck deck;
 
 
     public Participant(@NotNull User user, @NotNull ParticipantStatus participantStatus) {
-        this.participantId = user.getUserId();
+        this.participantId = UUID.randomUUID();
         this.user = user;
         this.participantStatus = participantStatus;
     }

@@ -21,7 +21,7 @@ public class Card {
     private @NotNull UUID cardId;
 
     @Getter
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "deck_id")
     private @NotNull Deck deck;
 

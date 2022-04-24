@@ -1,6 +1,6 @@
 package de.danielkoellgen.srscsprodtestservice.domain.collaboration.domain;
 
-import de.danielkoellgen.srscsprodtestservice.domain.participant.Participant;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
@@ -22,7 +22,7 @@ public class Collaboration {
     private @NotNull UUID collaborationId;
 
     @Getter
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL)
     private @NotNull List<Participant> participants;
 
 
