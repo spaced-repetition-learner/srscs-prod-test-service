@@ -6,10 +6,12 @@ import de.danielkoellgen.srscsprodtestservice.domain.card.repository.CardReposit
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.CardClient;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class CardService {
@@ -32,5 +34,17 @@ public class CardService {
         Card newCard = optionalCard.get();
         cardRepository.save(newCard);
         return newCard;
+    }
+
+    public @Nullable Card synchronizeCard(@NotNull UUID cardId) {
+        Optional<Card> optionalCard = cardClient.fetchCard(cardId);
+
+        if (optionalCard.isEmpty()) {
+            cardRepository.deleteById(cardId);
+            return null;
+        }
+
+        cardRepository.save(optionalCard.get());
+        return optionalCard.get();
     }
 }

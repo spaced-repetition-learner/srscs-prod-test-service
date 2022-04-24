@@ -4,9 +4,11 @@ import de.danielkoellgen.srscsprodtestservice.domain.card.domain.Card;
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.CardType;
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.ReviewAction;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
+import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.*;
 import de.danielkoellgen.srscsprodtestservice.web.userservice.UserClient;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @Scope("singleton")
@@ -27,13 +30,16 @@ public class CardClient {
 
     private final WebClient cardClient;
 
+    private final DeckRepository deckRepository;
+
     private final String deckServiceAddress;
 
     private final Logger logger = LoggerFactory.getLogger(CardClient.class);
 
     @Autowired
-    public CardClient(@Value("${app.deckService.address}") String deckServiceAddress) {
+    public CardClient(@Value("${app.deckService.address}") String deckServiceAddress, DeckRepository deckRepository) {
         this.cardClient = WebClient.create();
+        this.deckRepository = deckRepository;
         this.deckServiceAddress = deckServiceAddress;
     }
 
@@ -109,6 +115,27 @@ public class CardClient {
                     .block();
             assert responseDto != null;
             return Optional.of(new Card(responseDto.cardId(), rootCard.getDeck(), responseDto.getIsActive()));
+
+        } catch (WebClientResponseException e) {
+            return Optional.empty();
+
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    public @NotNull Optional<Card> fetchCard(@NotNull UUID cardId) {
+        try {
+            CardResponseDto responseDto = cardClient.get().uri(deckServiceAddress + "/cards/" + cardId)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(CardResponseDto.class)
+                    .block();
+            assert responseDto != null;
+            Deck deck = deckRepository.findById(responseDto.deckId()).get();
+            return Optional.of(new Card(responseDto.cardId(), deck, responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
             return Optional.empty();
