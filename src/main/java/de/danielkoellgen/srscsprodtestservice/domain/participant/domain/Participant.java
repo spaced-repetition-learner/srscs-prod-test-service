@@ -42,4 +42,18 @@ public class Participant {
         this.user = user;
         this.participantStatus = participantStatus;
     }
+
+    public void acceptCollaborationInvitation() {
+        participantStatus = ParticipantStatus.INVITATION_ACCEPTED;
+    }
+
+    public void endCollaboration() {
+        if (participantStatus.equals(ParticipantStatus.INVITED)) {
+            participantStatus = ParticipantStatus.INVITATION_DECLINED;
+            return;
+        }
+        if (participantStatus.equals(ParticipantStatus.INVITATION_ACCEPTED)) {
+            participantStatus = ParticipantStatus.TERMINATED;
+        }
+    }
 }
