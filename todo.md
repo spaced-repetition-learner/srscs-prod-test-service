@@ -10,7 +10,7 @@ DOMAIN
             Create Collabs      (done)
             Accept Collabs      (done)
         RANDOM BEHAVIOR
-            Select Action       ()
+            Select Action       (done)
             Review Cards        (done)
             Create User         (done)
             Create Cards        (done)
@@ -47,5 +47,5 @@ LOGGING
 # race condition create deck when user created.
 # refactor services
 # supress errors
-# card - isactive?
-# deck - isactive?
+# deck - synchronize decks periodically
+# deck - isActive status
