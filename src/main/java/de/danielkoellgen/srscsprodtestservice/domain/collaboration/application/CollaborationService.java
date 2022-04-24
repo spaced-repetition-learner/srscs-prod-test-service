@@ -4,6 +4,7 @@ import de.danielkoellgen.srscsprodtestservice.domain.collaboration.domain.Collab
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.repository.CollaborationRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.repository.ParticipantRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.web.collabservice.CollabClient;
 import org.jetbrains.annotations.NotNull;
@@ -19,11 +20,14 @@ public class CollaborationService {
     private final CollabClient collabClient;
 
     private final CollaborationRepository collaborationRepository;
+    private final ParticipantRepository participantRepository;
 
     @Autowired
-    public CollaborationService(CollabClient collabClient, CollaborationRepository collaborationRepository) {
+    public CollaborationService(CollabClient collabClient, CollaborationRepository collaborationRepository,
+            ParticipantRepository participantRepository) {
         this.collabClient = collabClient;
         this.collaborationRepository = collaborationRepository;
+        this.participantRepository = participantRepository;
     }
 
     public @NotNull Collaboration externallyStartCollaboration(@NotNull List<User> users) {
@@ -43,6 +47,7 @@ public class CollaborationService {
         if (!response) {
             throw new RuntimeException("Failed to externally accept the Collaboration.");
         }
-        //TODO
+        participant.acceptCollaborationInvitation();
+        participantRepository.save(participant);
     }
 }
