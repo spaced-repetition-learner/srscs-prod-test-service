@@ -12,15 +12,15 @@ import java.util.Optional;
 @Service
 public class LoopService {
 
-    private final LoopExecutionService loopExecutionService;
+    private final LoopExecutionThread loopExecutionThread;
 
     private final LoopRepository loopRepository;
 
     public static Integer loopId = 1;
 
     @Autowired
-    public LoopService(LoopExecutionService loopExecutionService, LoopRepository loopRepository) {
-        this.loopExecutionService = loopExecutionService;
+    public LoopService(LoopExecutionThread loopExecutionThread, LoopRepository loopRepository) {
+        this.loopExecutionThread = loopExecutionThread;
         this.loopRepository = loopRepository;
     }
 
@@ -32,7 +32,7 @@ public class LoopService {
         loop.startLoop();
         loopRepository.save(loop);
 
-        Thread thread = new Thread(loopExecutionService);
+        Thread thread = new Thread(loopExecutionThread);
         thread.setDaemon(true);
         thread.start();
     }

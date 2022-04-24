@@ -11,30 +11,29 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 
 @Component
-public class LoopExecutionService implements Runnable {
+public class LoopExecutionThread implements Runnable {
+
+    private final LoopStartUpService loopStartUpService;
+    private final LoopIterationService loopIterationService;
 
     private final LoopRepository loopRepository;
 
-    private final Logger logger = LoggerFactory.getLogger(LoopExecutionService.class);
+    private final Logger logger = LoggerFactory.getLogger(LoopExecutionThread.class);
 
     @Autowired
-    public LoopExecutionService(LoopRepository loopRepository) {
+    public LoopExecutionThread(LoopStartUpService loopStartUpService, LoopIterationService loopIterationService,
+            LoopRepository loopRepository) {
+        this.loopStartUpService = loopStartUpService;
+        this.loopIterationService = loopIterationService;
         this.loopRepository = loopRepository;
     }
 
     @Override
     public void run() {
-        runLoop();
-    }
-
-    private void runLoop() {
         executeStartUp();
 
-        if (validateLoopIsStillActive()) {
-            executeRandomBehavior();
-
-        } else {
-            // TODO: LOG THIS
+        while(validateLoopIsStillActive()) {
+            executeIteration();
         }
     }
 
@@ -50,11 +49,10 @@ public class LoopExecutionService implements Runnable {
     }
 
     private void executeStartUp() {
-        // TODO
+        loopStartUpService.run();
     }
 
-    private void executeRandomBehavior() {
-        // TODO
+    private void executeIteration() {
+        loopIterationService.runIteration();
     }
-
 }
