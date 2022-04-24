@@ -2,17 +2,20 @@ package de.danielkoellgen.srscsprodtestservice.web.collabservice;
 
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.domain.Collaboration;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
-import de.danielkoellgen.srscsprodtestservice.domain.participant.Participant;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.web.collabservice.dto.CollaborationRequestDto;
 import de.danielkoellgen.srscsprodtestservice.web.collabservice.dto.CollaborationResponseDto;
-import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.DeckResponseDto;
+import de.danielkoellgen.srscsprodtestservice.web.deckservice.DeckClient;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -30,6 +33,8 @@ public class CollabClient {
 
     private final String collabServiceAddress;
 
+    private final Logger logger = LoggerFactory.getLogger(CollabClient.class);
+
     @Autowired
     public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress) {
         this.collabClient = WebClient.create();
@@ -44,6 +49,11 @@ public class CollabClient {
                         .toList(),
                 collaborationName.getName()
         );
+
+        logger.debug("Requesting Collab-Service to start a new Collaboration. Address is POST {}",
+                collabServiceAddress+"/collaborations");
+        logger.trace("{}", requestDto);
+
         try {
             CollaborationResponseDto responseDto = collabClient.post()
                     .uri(collabServiceAddress + "/collaborations")
@@ -56,6 +66,7 @@ public class CollabClient {
                     .bodyToMono(CollaborationResponseDto.class)
                     .block();
             assert responseDto != null;
+            logger.trace("{}", responseDto);
 
             List<Participant> participants = responseDto.participants().stream()
                     .map(x -> new Participant(
@@ -76,27 +87,36 @@ public class CollabClient {
 
     public Boolean acceptCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
         UUID collabId = collaboration.getCollaborationId();
-        UUID participantId = participant.getParticipantId();
+        UUID participantId = participant.getUser().getUserId();
+
+        logger.debug("Requesting Collaboration-Service to accept the Participation. Address is POST {}",
+                collabServiceAddress+"/collaborations/"+collabId+"/participants/"+participantId+"/state");
+
         try {
             collabClient.post()
-                    .uri(collabServiceAddress + "/collaborations/"+collabId+"/participants/"+participantId+"/state")
+                    .uri(collabServiceAddress+"/collaborations/"+collabId+"/participants/"+participantId+"/state")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error));
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(ResponseEntity.class)
+                    .block();
+
+            logger.debug("Request successful.");
             return true;
         } catch (WebClientResponseException e) {
+            logger.error("Request failed. {}", e.getMessage());
             return false;
 
         } catch (Exception e) {
+            logger.error("Request failed. {}", e.getMessage());
             return false;
         }
     }
 
     public Boolean endCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
         UUID collabId = collaboration.getCollaborationId();
-        UUID participantId = participant.getParticipantId();
+        UUID participantId = participant.getUser().getUserId();
         try {
             collabClient.delete().uri(collabServiceAddress + "/collaborations/"+collabId+"/participants/"+participantId)
                     .retrieve()

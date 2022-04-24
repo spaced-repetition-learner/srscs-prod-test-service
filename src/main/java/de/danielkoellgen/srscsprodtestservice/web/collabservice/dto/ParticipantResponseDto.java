@@ -1,7 +1,7 @@
 package de.danielkoellgen.srscsprodtestservice.web.collabservice.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.danielkoellgen.srscsprodtestservice.domain.participant.ParticipantStatus;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.ParticipantStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
