@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Collaboration-Service API
+  version: '1.0'
+
+paths:
+  "/logs":
+    get:
+      summary: Exposes log-files for dev. purposes.
+      tags:
+        - /logs
+      parameters:
+        - in: path
+          name: file
+          required: true
+          examples:
+            info:
+              value: 'info'
+            error:
+              value: 'error'
+            dinfo:
+              value: 'dinfo'
+            dtrace:
+              value: 'dtrace'
+          schema:
+            type: string
+      responses:
+        200:
+          description: Returns the queried logfile.
+          content:
+            text/plain:
+              schema:
+                type: string
