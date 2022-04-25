@@ -5,6 +5,7 @@ import de.danielkoellgen.srscsprodtestservice.domain.card.domain.CardType;
 import de.danielkoellgen.srscsprodtestservice.domain.card.domain.ReviewAction;
 import de.danielkoellgen.srscsprodtestservice.domain.card.repository.CardRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
+import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.CardClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,15 +20,18 @@ public class CardService {
 
     private final CardClient cardClient;
 
+    private final DeckRepository deckRepository;
     private final CardRepository cardRepository;
 
     @Autowired
-    public CardService(CardClient cardClient, CardRepository cardRepository) {
+    public CardService(CardClient cardClient, DeckRepository deckRepository, CardRepository cardRepository) {
         this.cardClient = cardClient;
+        this.deckRepository = deckRepository;
         this.cardRepository = cardRepository;
     }
 
-    public @NotNull Card externallyCreateNewDefaultCard(@NotNull Deck deck) {
+    public @NotNull Card externallyCreateNewDefaultCard(@NotNull UUID deckId) {
+        Deck deck = deckRepository.findById(deckId).get();
         Optional<Card> optionalCard = cardClient.createEmptyCard(deck, CardType.DEFAULT);
         if (optionalCard.isEmpty()) {
             throw new RuntimeException("Failed to externally create Card.");

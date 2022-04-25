@@ -49,8 +49,14 @@ public class CollaborationServiceIntegrationTest {
         }
 
         // when
-        collaborationService.externallyStartCollaboration(users);
-        collaborationService.externallyStartCollaboration(users);
+        collaborationService.externallyStartCollaboration(users.stream()
+                .map(User::getUserId)
+                .toList()
+        );
+        collaborationService.externallyStartCollaboration(users.stream()
+                .map(User::getUserId)
+                .toList()
+        );
     }
 
     @Test
@@ -63,10 +69,15 @@ public class CollaborationServiceIntegrationTest {
             );
         }
         Thread.sleep(50);
-        Collaboration collaboration = collaborationService.externallyStartCollaboration(users);
+        Collaboration collaboration = collaborationService.externallyStartCollaboration(users.stream()
+                .map(User::getUserId)
+                .toList()
+        );
         Thread.sleep(50);
 
         // when
-        collaborationService.externallyAcceptCollaboration(collaboration, collaboration.getParticipants().get(0));
+        collaborationService.externallyAcceptCollaboration(
+                collaboration.getCollaborationId(), collaboration.getParticipants().get(0).getParticipantId()
+        );
     }
 }

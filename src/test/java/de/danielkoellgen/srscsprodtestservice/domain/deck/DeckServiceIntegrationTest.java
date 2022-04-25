@@ -52,7 +52,7 @@ public class DeckServiceIntegrationTest {
         Thread.sleep(100);
 
         // when
-        Deck deck = deckService.externallyCreateDeck(user1);
+        Deck deck = deckService.externallyCreateDeck(user1.getUserId());
 
         // then
         assertThat(deckRepository.existsById(deck.getDeckId()))

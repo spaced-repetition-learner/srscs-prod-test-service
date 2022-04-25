@@ -7,7 +7,6 @@ import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.domain.user.repository.UserRepository;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.DeckClient;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +28,8 @@ public class DeckService {
         this.deckRepository = deckRepository;
     }
 
-    public @NotNull Deck externallyCreateDeck(@NotNull User user) {
+    public @NotNull Deck externallyCreateDeck(@NotNull UUID userId) {
+        User user = userRepository.findById(userId).get();
         Optional<Deck> optionalDeck = deckClient.createDeck(user, DeckName.makeRandomDeckName());
         if (optionalDeck.isEmpty()) {
             throw new RuntimeException("Failed to externally create Deck.");
@@ -39,16 +39,14 @@ public class DeckService {
         return newDeck;
     }
 
-    public @Nullable Deck addExternallyCreatedDeck(@NotNull UUID deckId, @NotNull UUID userId) {
+    public void addExternallyCreatedDeck(@NotNull UUID deckId, @NotNull UUID userId) {
         try {
             User user = userRepository.findById(userId).get();
             Deck newDeck = new Deck(deckId, user, true);
             deckRepository.save(newDeck);
-            return newDeck;
 
         } catch (Exception ignored) {
             //TODO Log this
-            return null;
         }
     }
 

@@ -88,7 +88,7 @@ public class LoopStartUpService {
         for(int i = 0; i < deckCount; i++) {
             User user = users.get(random.nextInt(users.size() - 1));
             decks.add(
-                    deckService.externallyCreateDeck(user)
+                    deckService.externallyCreateDeck(user.getUserId())
             );
             Thread.sleep(sleepPerAction);
         }
@@ -101,7 +101,7 @@ public class LoopStartUpService {
         for(int i = 0; i < cardCount; i++) {
             Deck deck = decks.get(random.nextInt(decks.size() - 1));
             cards.add(
-                    cardService.externallyCreateNewDefaultCard(deck)
+                    cardService.externallyCreateNewDefaultCard(deck.getDeckId())
             );
             Thread.sleep(sleepPerAction);
         }
@@ -120,7 +120,9 @@ public class LoopStartUpService {
                 }
             }
             collaborations.add(collaborationService.externallyStartCollaboration(
-                    invitedUsers
+                    invitedUsers.stream()
+                            .map(User::getUserId)
+                            .toList()
             ));
             Thread.sleep(sleepPerAction);
         }
@@ -131,7 +133,9 @@ public class LoopStartUpService {
         Random random = new Random();
         for (Collaboration collaboration : collaborations) {
             for (Participant participant : collaboration.getParticipants()) {
-                collaborationService.externallyAcceptCollaboration(collaboration, participant);
+                collaborationService.externallyAcceptCollaboration(
+                        collaboration.getCollaborationId(), participant.getParticipantId()
+                );
                 Thread.sleep(sleepPerAction);
             }
         }
