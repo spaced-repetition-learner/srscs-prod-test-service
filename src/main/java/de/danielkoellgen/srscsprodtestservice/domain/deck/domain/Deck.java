@@ -35,4 +35,8 @@ public class Deck {
         this.user = user;
         this.isActive = isActive;
     }
+
+    public void disableDeck() {
+        isActive = false;
+    }
 }
