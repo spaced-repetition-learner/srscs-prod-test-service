@@ -35,17 +35,11 @@ WEB
 
 CONTROLLER
     LOOP
-        Start Loop
-        End Loop
-
-KAFKA
-    -
-
-LOGGING
+        Start Loop              (done)
+        End Loop                (done)
 
 
-# race condition create deck when user created.
-# refactor services
-# supress errors
-# deck - synchronize decks periodically
-# deck - isActive status
+TODO
+    synchronize decks periodically
+    deck - isActive status
+    refactor services to UUIDs 
