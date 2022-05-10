@@ -25,7 +25,7 @@ public class KafkaDeckCardsEventConsumer {
         this.deckService = deckService;
     }
 
-    @KafkaListener(topics = {"${kafka.topic.deckscards}"}, id = "${kafka.groupId.deckscards}")
+    @KafkaListener(topics = {"${kafka.topic.deckscards}"}, id = "${kafka.groupId}")
     public void receive(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
         String eventName = getHeaderValue(event, "type");
         switch (eventName) {
