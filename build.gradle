@@ -60,10 +60,10 @@ tasks.named('test') {
 
 jib {
     to {
-        image = 'dadepu/srscs_prod_test:0.1.2'
+        image = 'dadepu/srscs_prod_test:0.1.3'
         auth {
-            username = System.getenv('USER') ?: 'null'
-            password = System.getenv('PASS') ?: 'null'
+            username = System.getenv('USER_A') ?: ''
+            password = System.getenv('PASS_A') ?: ''
         }
     }
     container {
