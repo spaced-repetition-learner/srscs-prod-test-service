@@ -43,6 +43,12 @@ public class Deck {
         isActive = false;
     }
 
+    public void update(@NotNull DeckResponseDto dto) {
+        if (!isActive.equals(dto.isActive())) {
+            isActive = dto.isActive();
+        }
+    }
+
     @Override
     public String toString() {
         return "Deck{" +
