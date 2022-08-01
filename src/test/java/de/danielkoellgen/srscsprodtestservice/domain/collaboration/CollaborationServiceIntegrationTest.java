@@ -136,6 +136,34 @@ public class CollaborationServiceIntegrationTest {
                 collaboration.getCollaborationId(), collaboration.getParticipants().get(0).getParticipantId()
         );
 
+    @Test
+    public void shouldCloneOverrideOnCardOverrideWhenCollaborating() throws InterruptedException {
+        // given
+        Collaboration collaboration = externallyCreateCollaboration(2);
+
+        // when
+        Card initialCard = cardService.externallyCreateEmptyDefaultCard(
+                collaboration.getParticipants().get(0).getDeck().getDeckId());
+        Thread.sleep(500);
+        Card overrideCard = cardService.externallyOverrideCardAsEmptyDefaultCard(
+                initialCard.getCardId());
+        Thread.sleep(1000);
+
+        // then
+        List<Card> clonedCards = cardSynchronizationService.synchronizeCardsByDeck(
+                collaboration.getParticipants().get(1).getDeck().getDeckId());
+        BiFunction<List<Card>, Boolean, List<Card>> filteredByStatus = (l, b) -> l.stream()
+                .filter(x -> x.getIsActive().equals(b))
+                .toList();
+        assertThat(clonedCards)
+                .hasSize(2);
+        assertThat(filteredByStatus.apply(clonedCards, true))
+                .hasSize(1);
+        assertThat(filteredByStatus.apply(clonedCards, false))
+                .hasSize(1);
+
+    }
+
     private Collaboration externallyCreateCollaboration(Integer size) {
         List<UUID> usersById = IntStream.range(0, size)
                 .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
