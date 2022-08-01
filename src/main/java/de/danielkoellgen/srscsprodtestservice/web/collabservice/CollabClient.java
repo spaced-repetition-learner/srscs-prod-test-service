@@ -36,8 +36,8 @@ public class CollabClient {
     private final Logger logger = LoggerFactory.getLogger(CollabClient.class);
 
     @Autowired
-    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress) {
-        this.collabClient = WebClient.create();
+    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress, WebClient webClient) {
+        this.collabClient = webClient;
         this.collabServiceAddress = collabServiceAddress;
     }
 

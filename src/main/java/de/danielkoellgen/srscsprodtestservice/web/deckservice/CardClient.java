@@ -37,8 +37,10 @@ public class CardClient {
     private final Logger logger = LoggerFactory.getLogger(CardClient.class);
 
     @Autowired
-    public CardClient(@Value("${app.deckService.address}") String deckServiceAddress, DeckRepository deckRepository) {
-        this.cardClient = WebClient.create();
+    public CardClient(
+            @Value("${app.deckService.address}") String deckServiceAddress, WebClient webclient,
+            DeckRepository deckRepository) {
+        this.cardClient = webclient;
         this.deckRepository = deckRepository;
         this.deckServiceAddress = deckServiceAddress;
     }

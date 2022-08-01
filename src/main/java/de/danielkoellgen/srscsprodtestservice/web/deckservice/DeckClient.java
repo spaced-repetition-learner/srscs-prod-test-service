@@ -31,8 +31,8 @@ public class DeckClient {
     private final Logger logger = LoggerFactory.getLogger(DeckClient.class);
 
     @Autowired
-    public DeckClient(@Value("${app.deckService.address}") String deckServiceAddress) {
-        this.deckClient = WebClient.create();
+    public DeckClient(@Value("${app.deckService.address}") String deckServiceAddress, WebClient webClient) {
+        this.deckClient = webClient;
         this.deckServiceAddress = deckServiceAddress;
     }
 

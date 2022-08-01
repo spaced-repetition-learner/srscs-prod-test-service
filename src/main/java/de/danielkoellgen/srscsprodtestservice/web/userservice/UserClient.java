@@ -33,8 +33,8 @@ public class UserClient {
     private final Logger logger = LoggerFactory.getLogger(UserClient.class);
 
     @Autowired
-    public UserClient(@Value("${app.userService.address}") String userServiceAddress) {
-        this.userClient = WebClient.create();
+    public UserClient(@Value("${app.userService.address}") String userServiceAddress, WebClient webClient) {
+        this.userClient = webClient;
         this.userServiceAddress = userServiceAddress;
     }
 
