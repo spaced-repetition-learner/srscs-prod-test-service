@@ -40,6 +40,12 @@ public class Card {
         return new Card(dto.cardId(), deck, dto.getIsActive());
     }
 
+    public void update(@NotNull CardResponseDto dto) {
+        if (!isActive.equals(dto.getIsActive())) {
+            isActive = dto.getIsActive();
+        }
+    }
+
     public void disableCard() {
         isActive = false;
     }
