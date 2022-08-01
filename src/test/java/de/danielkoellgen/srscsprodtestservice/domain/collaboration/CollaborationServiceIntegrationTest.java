@@ -137,6 +137,31 @@ public class CollaborationServiceIntegrationTest {
         );
 
     @Test
+    public void shouldCloneCardsOnCardCreationWhenCollaborating() throws InterruptedException {
+        // given
+        Collaboration collaboration = externallyCreateCollaboration(2);
+
+        // when
+        cardService.externallyCreateEmptyDefaultCard(
+                collaboration.getParticipants().get(0).getDeck().getDeckId());
+        cardService.externallyCreateEmptyDefaultCard(
+                collaboration.getParticipants().get(0).getDeck().getDeckId());
+        Thread.sleep(1000);
+
+        // then
+        List<Card> sourceCards = cardSynchronizationService.synchronizeCardsByDeck(
+                collaboration.getParticipants().get(0).getDeck().getDeckId());
+        assertThat(sourceCards)
+                .hasSize(2);
+
+        // and then
+        List<Card> clonedCards = cardSynchronizationService.synchronizeCardsByDeck(
+                collaboration.getParticipants().get(1).getDeck().getDeckId());
+        assertThat(clonedCards)
+                .hasSize(2);
+    }
+
+    @Test
     public void shouldCloneOverrideOnCardOverrideWhenCollaborating() throws InterruptedException {
         // given
         Collaboration collaboration = externallyCreateCollaboration(2);
