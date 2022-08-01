@@ -1,11 +1,14 @@
 package de.danielkoellgen.srscsprodtestservice.domain.deck.domain;
 
+import de.danielkoellgen.srscsprodtestservice.domain.deck.application.DeckSynchronizationService;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.DeckResponseDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.*;
 import java.util.UUID;
@@ -28,6 +31,8 @@ public class Deck {
     @Column(name = "is_active")
     private @NotNull Boolean isActive;
 
+    @Transient
+    private static final Logger logger = LoggerFactory.getLogger(Deck.class);
 
     public Deck(@NotNull UUID deckId, @NotNull User user, @NotNull Boolean isActive) {
         this.deckId = deckId;
@@ -45,6 +50,8 @@ public class Deck {
 
     public void update(@NotNull DeckResponseDto dto) {
         if (!isActive.equals(dto.isActive())) {
+            logger.warn("Local- and remote isActive out of sync. [local={}, remote={}]",
+                    this.isActive, dto.isActive());
             isActive = dto.isActive();
         }
     }
