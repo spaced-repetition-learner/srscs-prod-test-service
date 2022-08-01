@@ -88,4 +88,20 @@ public class CardService {
         cardClient.reviewCard(card, reviewAction);
         logger.info("Card reviewed as {}.", reviewAction);
     }
+
+    public @Nullable Card synchronizeCard(@NotNull UUID cardId) {
+        logger.trace("Synchronizing Card...");
+        Optional<Card> optionalCard = cardClient.fetchCard(cardId);
+
+        if (optionalCard.isEmpty()) {
+            throw new RuntimeException("Failed to fetch Card while synchronizing.");
+        }
+        Card card = optionalCard.get();
+        cardRepository.save(card);
+        logger.info("Card synchronized.");
+        logger.debug("{}", card);
+        logger.trace("Card saved.");
+
+        return card;
+    }
 }
