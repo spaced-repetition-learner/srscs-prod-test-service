@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.persistence.*;
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 @Entity
 @Table(name = "participants")
@@ -57,13 +58,16 @@ public class Participant {
         participantStatus = ParticipantStatus.INVITATION_ACCEPTED;
     }
 
-    public void endCollaboration() {
-        if (participantStatus.equals(ParticipantStatus.INVITED)) {
-            participantStatus = ParticipantStatus.INVITATION_DECLINED;
-            return;
+    public void addDeck(@NotNull Deck deck) {
+        this.deck = deck;
+    }
+
+    public void update(@NotNull ParticipantResponseDto dto, BiFunction<UUID, UUID, Deck> fetchDeck) {
+        if (!participantStatus.equals(dto.getMappedParticipantStatus())) {
+            participantStatus = dto.getMappedParticipantStatus();
         }
-        if (participantStatus.equals(ParticipantStatus.INVITATION_ACCEPTED)) {
-            participantStatus = ParticipantStatus.TERMINATED;
+        if (deck == null && dto.deck() != null) {
+            deck = fetchDeck.apply(dto.deck().deckId(), dto.userId());
         }
     }
 
