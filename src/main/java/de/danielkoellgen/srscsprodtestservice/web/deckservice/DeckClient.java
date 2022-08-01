@@ -42,7 +42,8 @@ public class DeckClient {
         DeckRequestDto requestDto = new DeckRequestDto(user.getUserId(), deckName.getName());
         String uri = deckServiceAddress + "/decks";
 
-        logger.trace("Calling POST {} to create a new Deck for '{}'...", uri, user.getUsername().getUsername());
+        logger.trace("Calling POST {} to create a new Deck for '{}'...", uri,
+                user.getUsername().getUsername());
         logger.debug("{}", requestDto);
 
         try {
@@ -63,7 +64,8 @@ public class DeckClient {
             return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
@@ -89,11 +91,13 @@ public class DeckClient {
                     .block();
             assert deckResponseDtos != null;
 
-            logger.trace("Request successful. {} Decks fetched for User {}.", deckResponseDtos.size(), userId);
+            logger.trace("Request successful. {} Decks fetched for User {}.",
+                    deckResponseDtos.size(), userId);
             return deckResponseDtos;
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return List.of();
 
         } catch (Exception e) {

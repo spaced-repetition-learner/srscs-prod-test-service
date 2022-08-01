@@ -21,8 +21,8 @@ public class LoopExecutionThread implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(LoopExecutionThread.class);
 
     @Autowired
-    public LoopExecutionThread(LoopStartUpService loopStartUpService, LoopIterationService loopIterationService,
-            LoopRepository loopRepository) {
+    public LoopExecutionThread(LoopStartUpService loopStartUpService,
+            LoopIterationService loopIterationService, LoopRepository loopRepository) {
         this.loopStartUpService = loopStartUpService;
         this.loopIterationService = loopIterationService;
         this.loopRepository = loopRepository;

@@ -16,7 +16,8 @@ public class CardCreated extends AbstractConsumerEvent {
     @Getter
     private final @NotNull CardCreatedDto payload;
 
-    public CardCreated(CardService cardService, @NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    public CardCreated(CardService cardService, @NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         super(event);
         this.cardService = cardService;
         this.payload = CardCreatedDto.makeFromSerialization(event.value());

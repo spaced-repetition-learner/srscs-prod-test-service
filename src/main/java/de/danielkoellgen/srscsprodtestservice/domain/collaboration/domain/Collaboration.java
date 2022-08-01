@@ -41,14 +41,16 @@ public class Collaboration {
     }
 
     public Optional<Participant> findParticipant(UUID userId) {
-        return participants.stream()
+        return participants
+                .stream()
                 .filter(x -> x.getUserId().equals(userId))
                 .findFirst();
     }
 
     public void update(@NotNull CollaborationResponseDto dto, Function<UUID, Deck> fetchDeck) {
         dto.participants().forEach(x -> {
-            Optional<Participant> participant = participants.stream()
+            Optional<Participant> participant = participants
+                    .stream()
                     .filter(y -> y.getUserId().equals(x.userId()))
                     .findFirst();
             if (participant.isPresent()) {

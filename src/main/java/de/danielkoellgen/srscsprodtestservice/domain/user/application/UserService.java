@@ -29,11 +29,11 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public @NotNull User externallyCreateUser(@NotNull Username username, @NotNull MailAddress mailAddress) {
+    public @NotNull User externallyCreateUser(@NotNull Username username,
+            @NotNull MailAddress mailAddress) {
         logger.trace("Externally creating User '{}'...", username.getUsername());
-        Optional<User> optUser = userClient.createUser(
-                username, mailAddress, Name.newName("anyName"), Name.newName("anyName")
-        );
+        Optional<User> optUser = userClient.createUser(username, mailAddress,
+                Name.newName("anyName"), Name.newName("anyName"));
         if (optUser.isEmpty()) {
             throw new RuntimeException("Failed to externally create User.");
         }

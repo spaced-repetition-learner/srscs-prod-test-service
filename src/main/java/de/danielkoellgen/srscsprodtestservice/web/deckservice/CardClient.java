@@ -80,7 +80,8 @@ public class CardClient {
         }
     }
 
-    public @NotNull Optional<Card> overrideCardAsEmptyCard(@NotNull Card rootCard, @NotNull CardType cardType) {
+    public @NotNull Optional<Card> overrideCardAsEmptyCard(@NotNull Card rootCard,
+            @NotNull CardType cardType) {
         CardRequestDto requestDto = new CardRequestDto(
                 rootCard.getDeck().getDeckId(),
                 CardTypeDto.fromCardType(cardType),
@@ -106,10 +107,12 @@ public class CardClient {
             logger.trace("Request successful. Card overridden.");
             logger.debug("{}", responseDto);
 
-            return Optional.of(new Card(responseDto.cardId(), rootCard.getDeck(), responseDto.getIsActive()));
+            return Optional.of(new Card(responseDto.cardId(), rootCard.getDeck(),
+                    responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
@@ -119,7 +122,8 @@ public class CardClient {
     }
 
     public void reviewCard(@NotNull Card card, @NotNull ReviewAction reviewAction) {
-        ReviewRequestDto requestDto = new ReviewRequestDto(ReviewActionDto.fromReviewAction(reviewAction));
+        ReviewRequestDto requestDto = new ReviewRequestDto(
+                ReviewActionDto.fromReviewAction(reviewAction));
         String uri = deckServiceAddress+"/cards/" + card.getCardId() + "/scheduler/activity/review";
 
         logger.trace("Calling POST {} to review as {}.", uri, reviewAction);
@@ -137,7 +141,8 @@ public class CardClient {
             logger.trace("Request successful. Card reviewed.");
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
 
         } catch (Exception e) {
             logger.error("Request failed locally. {}.", e.getMessage(), e);
@@ -169,7 +174,8 @@ public class CardClient {
             return Optional.of(new Card(responseDto.cardId(), deck, responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {

@@ -74,9 +74,8 @@ public class LoopStartUpService {
     private List<User> createUsers() throws InterruptedException {
         List<User> users = new ArrayList<>();
         for(int i = 0; i < userCount; i++) {
-            users.add(userService.externallyCreateUser(
-                    Username.makeRandomUsername(), MailAddress.makeRandomMailAddress()
-            ));
+            users.add(userService.externallyCreateUser(Username.makeRandomUsername(),
+                    MailAddress.makeRandomMailAddress()));
             Thread.sleep(sleepPerAction);
         }
         return users;
@@ -87,9 +86,7 @@ public class LoopStartUpService {
         List<Deck> decks = new ArrayList<>();
         for(int i = 0; i < deckCount; i++) {
             User user = users.get(random.nextInt(users.size() - 1));
-            decks.add(
-                    deckService.externallyCreateDeck(user.getUserId())
-            );
+            decks.add(deckService.externallyCreateDeck(user.getUserId()));
             Thread.sleep(sleepPerAction);
         }
         return decks;
@@ -100,9 +97,7 @@ public class LoopStartUpService {
         List<Card> cards = new ArrayList<>();
         for(int i = 0; i < cardCount; i++) {
             Deck deck = decks.get(random.nextInt(decks.size() - 1));
-            cards.add(
-                    cardService.externallyCreateEmptyDefaultCard(deck.getDeckId())
-            );
+            cards.add(cardService.externallyCreateEmptyDefaultCard(deck.getDeckId()));
             Thread.sleep(sleepPerAction);
         }
         return cards;
@@ -122,8 +117,7 @@ public class LoopStartUpService {
             collaborations.add(collaborationService.externallyCreateCollaboration(
                     invitedUsers.stream()
                             .map(User::getUserId)
-                            .toList()
-            ));
+                            .toList()));
             Thread.sleep(sleepPerAction);
         }
         return collaborations;
@@ -134,8 +128,7 @@ public class LoopStartUpService {
         for (Collaboration collaboration : collaborations) {
             for (Participant participant : collaboration.getParticipants()) {
                 collaborationService.externallyAcceptCollaboration(
-                        collaboration.getCollaborationId(), participant.getParticipantId()
-                );
+                        collaboration.getCollaborationId(), participant.getParticipantId());
                 Thread.sleep(sleepPerAction);
             }
         }

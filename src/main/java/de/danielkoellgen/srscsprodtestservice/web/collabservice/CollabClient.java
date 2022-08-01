@@ -36,7 +36,8 @@ public class CollabClient {
     private final Logger logger = LoggerFactory.getLogger(CollabClient.class);
 
     @Autowired
-    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress, WebClient webClient) {
+    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress,
+            WebClient webClient) {
         this.collabClient = webClient;
         this.collabServiceAddress = collabServiceAddress;
     }
@@ -47,8 +48,7 @@ public class CollabClient {
                 users.stream()
                         .map(x -> x.getUsername().getUsername())
                         .toList(),
-                collaborationName.getName()
-        );
+                collaborationName.getName());
         String uri = collabServiceAddress + "/collaborations";
 
         logger.trace("Calling POST {} to start a new Collaboration with {} Users...", uri, users.size());
@@ -75,8 +75,8 @@ public class CollabClient {
                             users.stream()
                                     .filter(y -> y.getUserId().equals(x.userId()))
                                     .findFirst().orElseThrow(),
-                            x.getMappedParticipantStatus()
-                    )).toList();
+                            x.getMappedParticipantStatus()))
+                    .toList();
             return Optional.of(new Collaboration(responseDto.collaborationId(), participants));
 
         } catch (WebClientResponseException e) {
@@ -89,7 +89,8 @@ public class CollabClient {
         }
     }
 
-    public Boolean acceptCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
+    public Boolean acceptCollaboration(@NotNull Collaboration collaboration,
+            @NotNull Participant participant) {
         UUID collaborationId = collaboration.getCollaborationId();
         UUID participantId = participant.getUserId();
         String uri = collabServiceAddress+"/collaborations/"+collaborationId+"/participants/"+participantId+"/state";
@@ -110,7 +111,8 @@ public class CollabClient {
             return true;
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return false;
 
         } catch (Exception e) {
@@ -119,7 +121,8 @@ public class CollabClient {
         }
     }
 
-    public Boolean endCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
+    public Boolean endCollaboration(@NotNull Collaboration collaboration,
+            @NotNull Participant participant) {
         UUID collaborationId = collaboration.getCollaborationId();
         UUID participantId = participant.getUserId();
         String uri = collabServiceAddress + "/collaborations/"+collaborationId+"/participants/"+participantId;
@@ -137,7 +140,8 @@ public class CollabClient {
             return true;
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return false;
 
         } catch (Exception e) {
@@ -168,7 +172,8 @@ public class CollabClient {
             return Optional.of(responseDto);
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {

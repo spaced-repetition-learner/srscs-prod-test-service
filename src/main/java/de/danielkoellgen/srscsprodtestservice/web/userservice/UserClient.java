@@ -40,10 +40,10 @@ public class UserClient {
         this.userServiceAddress = userServiceAddress;
     }
 
-    public @NotNull Optional<User> createUser(Username username, MailAddress mail, Name firstName, Name lastName) {
-        UserRequestDto requestDto = new UserRequestDto(
-                username.getUsername(), mail.getMailAddress(), firstName.getName(), lastName.getName()
-        );
+    public @NotNull Optional<User> createUser(Username username, MailAddress mail, Name firstName,
+            Name lastName) {
+        UserRequestDto requestDto = new UserRequestDto(username.getUsername(), mail.getMailAddress(),
+                firstName.getName(), lastName.getName());
         String uri = userServiceAddress + "/users";
 
         logger.trace("Calling POST {} to create a new User...", uri);
@@ -63,12 +63,11 @@ public class UserClient {
             logger.trace("Request successful. User created.");
             logger.debug("{}", responseDto);
 
-            return Optional.of(
-                    new User(responseDto.userId(), username, responseDto.isActive())
-            );
+            return Optional.of(new User(responseDto.userId(), username, responseDto.isActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
@@ -99,7 +98,8 @@ public class UserClient {
             return Optional.of(responseDto);
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {

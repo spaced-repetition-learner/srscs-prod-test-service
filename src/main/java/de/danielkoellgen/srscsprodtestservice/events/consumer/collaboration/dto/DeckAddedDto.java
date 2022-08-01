@@ -15,7 +15,8 @@ public record DeckAddedDto(
         @NotNull UUID deckId
 
 ) {
-    public static @NotNull DeckAddedDto makeFromSerialization(@NotNull String serialized) throws JsonProcessingException {
+    public static @NotNull DeckAddedDto makeFromSerialization(@NotNull String serialized)
+            throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
         return mapper.readValue(serialized, DeckAddedDto.class);
     }

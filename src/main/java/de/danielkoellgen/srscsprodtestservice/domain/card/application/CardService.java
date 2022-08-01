@@ -28,7 +28,8 @@ public class CardService {
     private final Logger logger = LoggerFactory.getLogger(CardService.class);
 
     @Autowired
-    public CardService(CardClient cardClient, DeckRepository deckRepository, CardRepository cardRepository) {
+    public CardService(CardClient cardClient, DeckRepository deckRepository,
+            CardRepository cardRepository) {
         this.cardClient = cardClient;
         this.deckRepository = deckRepository;
         this.cardRepository = cardRepository;

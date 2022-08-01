@@ -38,8 +38,9 @@ public class CollaborationService {
 
 
     @Autowired
-    public CollaborationService(CollabClient collabClient, DeckService deckService, UserRepository userRepository,
-            DeckRepository deckRepository, CollaborationRepository collaborationRepository,
+    public CollaborationService(CollabClient collabClient, DeckService deckService,
+            UserRepository userRepository, DeckRepository deckRepository,
+            CollaborationRepository collaborationRepository,
             ParticipantRepository participantRepository) {
         this.collabClient = collabClient;
         this.deckService = deckService;
@@ -57,9 +58,8 @@ public class CollaborationService {
         usersIterable.iterator().forEachRemaining(users::add);
         logger.debug("{}", users);
 
-        Optional<Collaboration> optionalCollaboration = collabClient.createNewCollaboration(
-                users, DeckName.makeRandomDeckName()
-        );
+        Optional<Collaboration> optionalCollaboration = collabClient
+                .createNewCollaboration(users, DeckName.makeRandomDeckName());
         if (optionalCollaboration.isEmpty()) {
             throw new RuntimeException("Failed to externally start a new Collaboration.");
         }
@@ -93,7 +93,8 @@ public class CollaborationService {
         logger.debug("{}", participant);
     }
 
-    public void addDeckToParticipant(@NotNull UUID collaborationId, @NotNull UUID userId, @NotNull UUID deckId) {
+    public void addDeckToParticipant(@NotNull UUID collaborationId, @NotNull UUID userId,
+            @NotNull UUID deckId) {
         logger.trace("Updating Participant with Deck...");
         logger.trace("Fetching Collaboration by id {}...", collaborationId);
         Collaboration collaboration = collaborationRepository.findById(collaborationId).orElseThrow();

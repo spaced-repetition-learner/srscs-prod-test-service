@@ -26,7 +26,8 @@ public class DeckService {
     private final Logger logger = LoggerFactory.getLogger(DeckService.class);
 
     @Autowired
-    public DeckService(DeckClient deckClient, UserRepository userRepository, DeckRepository deckRepository) {
+    public DeckService(DeckClient deckClient, UserRepository userRepository,
+            DeckRepository deckRepository) {
         this.deckClient = deckClient;
         this.userRepository = userRepository;
         this.deckRepository = deckRepository;

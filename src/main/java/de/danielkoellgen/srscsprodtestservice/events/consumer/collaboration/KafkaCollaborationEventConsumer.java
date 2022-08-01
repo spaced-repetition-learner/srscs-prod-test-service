@@ -42,7 +42,8 @@ public class KafkaCollaborationEventConsumer {
         }
     }
 
-    private void processDeckAddedEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    private void processDeckAddedEvent(@NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         Span newSpan = tracer.nextSpan().name("event-deck-added");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 

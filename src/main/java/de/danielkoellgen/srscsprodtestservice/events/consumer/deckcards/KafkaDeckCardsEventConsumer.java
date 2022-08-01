@@ -50,7 +50,8 @@ public class KafkaDeckCardsEventConsumer {
         }
     }
 
-    private void processDeckCreatedEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    private void processDeckCreatedEvent(@NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         Span newSpan = tracer.nextSpan().name("event-deck-created");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
@@ -66,7 +67,8 @@ public class KafkaDeckCardsEventConsumer {
         }
     }
 
-    private void processDeckDisabledEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    private void processDeckDisabledEvent(@NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         Span newSpan = tracer.nextSpan().name("event-deck-disabled");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
@@ -82,7 +84,8 @@ public class KafkaDeckCardsEventConsumer {
         }
     }
 
-    private void processCardCreatedEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    private void processCardCreatedEvent(@NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         Span newSpan = tracer.nextSpan().name("event-card-created");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
@@ -98,7 +101,8 @@ public class KafkaDeckCardsEventConsumer {
         }
     }
 
-    private void processCardOverriddenEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    private void processCardOverriddenEvent(@NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         Span newSpan = tracer.nextSpan().name("event-card-overridden");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
@@ -114,7 +118,8 @@ public class KafkaDeckCardsEventConsumer {
         }
     }
 
-    private void processCardDisabledEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+    private void processCardDisabledEvent(@NotNull ConsumerRecord<String, String> event)
+            throws JsonProcessingException {
         Span newSpan = tracer.nextSpan().name("event-card-disabled");
         try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 

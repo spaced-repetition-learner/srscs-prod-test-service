@@ -16,8 +16,8 @@ public class DeckAdded extends AbstractConsumerEvent {
     @Getter
     private final @NotNull DeckAddedDto payload;
 
-    public DeckAdded(@NotNull CollaborationService collaborationService, @NotNull ConsumerRecord<String, String> event)
-            throws JsonProcessingException {
+    public DeckAdded(@NotNull CollaborationService collaborationService,
+            @NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
         super(event);
         this.collaborationService = collaborationService;
         this.payload = DeckAddedDto.makeFromSerialization(event.value());
@@ -25,9 +25,8 @@ public class DeckAdded extends AbstractConsumerEvent {
 
     @Override
     public void execute() {
-        collaborationService.addDeckToParticipant(
-                payload.collaborationId(), payload.userId(), payload.deckId()
-        );
+        collaborationService.addDeckToParticipant(payload.collaborationId(), payload.userId(),
+                payload.deckId());
     }
 
     @Override

@@ -66,10 +66,11 @@ public class LoopIterationService {
     private Integer acceptCollabCount;
 
     @Autowired
-    public LoopIterationService(UserService userService, DeckService deckService, CardService cardService,
-            CollaborationService collaborationService, UserRepository userRepository, DeckRepository deckRepository,
-            ParticipantRepository participantRepository, CollaborationRepository collaborationRepository,
-            CardRepository cardRepository) {
+    public LoopIterationService(UserService userService, DeckService deckService,
+            CardService cardService, CollaborationService collaborationService,
+            UserRepository userRepository, DeckRepository deckRepository,
+            ParticipantRepository participantRepository,
+            CollaborationRepository collaborationRepository, CardRepository cardRepository) {
         this.userService = userService;
         this.deckService = deckService;
         this.cardService = cardService;
@@ -129,9 +130,8 @@ public class LoopIterationService {
     }
 
     private void createNewUser() {
-        userService.externallyCreateUser(
-                Username.makeRandomUsername(), MailAddress.makeRandomMailAddress()
-        );
+        userService.externallyCreateUser(Username.makeRandomUsername(),
+                MailAddress.makeRandomMailAddress());
     }
 
     private void createDeckWithRandomUser() {
@@ -158,8 +158,8 @@ public class LoopIterationService {
             return;
         }
         collaborationService.externallyAcceptCollaboration(
-                randomParticipant.getFirst().getCollaborationId(), randomParticipant.getSecond().getParticipantId()
-        );
+                randomParticipant.getFirst().getCollaborationId(),
+                randomParticipant.getSecond().getParticipantId());
     }
 
     private void overrideRandomCard() {
@@ -216,7 +216,9 @@ public class LoopIterationService {
 
     private @Nullable Pair<Collaboration, Participant> pickRandomInvitedParticipant() {
         List<Participant> participants = new ArrayList<>();
-        participantRepository.findAllByParticipantStatus(ParticipantStatus.INVITED).iterator().forEachRemaining(participants::add);
+        participantRepository.findAllByParticipantStatus(ParticipantStatus.INVITED)
+                .iterator()
+                .forEachRemaining(participants::add);
 
         if (participants.isEmpty()) {
             return null;

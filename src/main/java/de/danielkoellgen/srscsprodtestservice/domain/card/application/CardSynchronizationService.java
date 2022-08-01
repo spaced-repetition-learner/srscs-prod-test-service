@@ -40,7 +40,8 @@ public class CardSynchronizationService {
     }
 
     public List<Card> synchronizeCardsByDeck(@NotNull UUID deckId) {
-        return cardClient.fetchCardsByDeck(deckId).stream()
+        return cardClient.fetchCardsByDeck(deckId)
+                .stream()
                 .map(this::synchronizeCard)
                 .toList();
     }
@@ -56,7 +57,8 @@ public class CardSynchronizationService {
         return syncedCard;
     }
 
-    private Card mergeRemoteAndLocalCard(@NotNull CardResponseDto remoteCard, @NotNull Optional<Card> localCard) {
+    private Card mergeRemoteAndLocalCard(@NotNull CardResponseDto remoteCard,
+            @NotNull Optional<Card> localCard) {
         if (localCard.isEmpty()) {
             Deck deck = deckRepository.findById(remoteCard.deckId())
                     .orElseGet(() -> {
