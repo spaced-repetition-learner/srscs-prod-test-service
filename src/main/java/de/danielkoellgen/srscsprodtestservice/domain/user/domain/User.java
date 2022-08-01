@@ -1,6 +1,7 @@
 package de.danielkoellgen.srscsprodtestservice.domain.user.domain;
 
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
+import de.danielkoellgen.srscsprodtestservice.web.userservice.dto.UserResponseDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
@@ -12,19 +13,17 @@ import java.util.UUID;
 @Entity
 @NoArgsConstructor
 @Table(name = "users")
+@Getter
 public class User {
 
     @Id
-    @Getter
     @Column(name = "user_id")
     @Type(type = "uuid-char")
     private @NotNull UUID userId;
 
-    @Getter
     @Embedded
     private @NotNull Username username;
 
-    @Getter
     @Column(name = "is_active")
     private @NotNull Boolean isActive;
 
@@ -33,6 +32,10 @@ public class User {
         this.userId = userId;
         this.username = username;
         this.isActive = isActive;
+    }
+
+    public static @NotNull User makeFromDto(@NotNull UserResponseDto dto) {
+        return new User(dto.userId(), dto.getMappedUsername(), dto.isActive());
     }
 
     @Override
