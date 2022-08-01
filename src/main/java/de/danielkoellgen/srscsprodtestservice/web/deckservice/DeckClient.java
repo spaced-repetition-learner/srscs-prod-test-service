@@ -67,4 +67,34 @@ public class DeckClient {
             return Optional.empty();
         }
     }
+
+    public @NotNull List<DeckResponseDto> fetchDeckByUser(@NotNull UUID userId) {
+        String uri = deckServiceAddress + "/decks?user-id=" + userId;
+
+        logger.trace("Calling GET {} to fetch all User's Decks...", uri);
+
+        try {
+            List<DeckResponseDto> deckResponseDtos = deckClient
+                    .get()
+                    .uri(uri)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToFlux(DeckResponseDto.class)
+                    .collectList()
+                    .block();
+            assert deckResponseDtos != null;
+
+            logger.trace("Request successful. {} Decks fetched for User {}.", deckResponseDtos.size(), userId);
+            return deckResponseDtos;
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            return List.of();
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return List.of();
+        }
+    }
 }
