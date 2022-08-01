@@ -25,11 +25,9 @@ public class DeckServiceIntegrationTest {
     private final UserRepository userRepository;
     private final DeckRepository deckRepository;
 
-    private User user1;
-
     @Autowired
-    public DeckServiceIntegrationTest(UserService userService, DeckService deckService, UserRepository userRepository,
-            DeckRepository deckRepository) {
+    public DeckServiceIntegrationTest(UserService userService, DeckService deckService,
+            UserRepository userRepository, DeckRepository deckRepository) {
         this.userService = userService;
         this.deckService = deckService;
         this.userRepository = userRepository;
@@ -38,7 +36,6 @@ public class DeckServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() {
-        user1 = userService.externallyCreateUser(Username.makeRandomUsername(), MailAddress.makeRandomMailAddress());
     }
 
     @AfterEach
@@ -49,13 +46,33 @@ public class DeckServiceIntegrationTest {
 
     @Test
     public void shouldAllowToExternallyCreateDecks() throws InterruptedException {
-        Thread.sleep(100);
+        // given
+        User user = userService.externallyCreateUser(
+                Username.makeRandomUsername(), MailAddress.makeRandomMailAddress());
 
         // when
-        Deck deck = deckService.externallyCreateDeck(user1.getUserId());
+        Thread.sleep(1000);     // waiting for 'UserCreated'-Event to arrive
+        Deck deck = deckService.externallyCreateDeck(user.getUserId());
 
         // then
-        assertThat(deckRepository.existsById(deck.getDeckId()))
-                .isTrue();
+        assertThat(deck.getUser())
+                .usingRecursiveComparison()
+                .isEqualTo(user);
+
+        // and then
+        Deck localDeck = deckRepository.findById(deck.getDeckId()).orElseThrow();
+        assertThat(localDeck)
+                .usingRecursiveComparison()
+                .isEqualTo(deck);
+    }
+
+    @Test
+    public void shouldAllowToExternallyCreateDecks_WithOccurringRaceCondition() {
+        // given
+        User newUser = userService.externallyCreateUser(
+                Username.makeRandomUsername(), MailAddress.makeRandomMailAddress());
+
+        // when
+        Deck deck = deckService.externallyCreateDeck(newUser.getUserId());
     }
 }
