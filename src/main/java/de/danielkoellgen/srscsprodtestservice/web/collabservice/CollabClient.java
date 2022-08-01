@@ -131,4 +131,35 @@ public class CollabClient {
             return false;
         }
     }
+
+    public @NotNull Optional<CollaborationResponseDto> fetchCollaboration(@NotNull UUID collaborationId) {
+        String uri = collabServiceAddress + "/collaborations/" + collaborationId;
+
+        logger.trace("Calling GET {}", uri);
+
+        try {
+            CollaborationResponseDto responseDto = collabClient
+                    .get()
+                    .uri(uri)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(CollaborationResponseDto.class)
+                    .block();
+            assert responseDto != null;
+
+            logger.trace("Request successful. Collaboration {} fetched.", collaborationId);
+            logger.debug("{}", responseDto);
+
+            return Optional.of(responseDto);
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            return Optional.empty();
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
 }
