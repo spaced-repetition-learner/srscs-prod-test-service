@@ -41,6 +41,19 @@ public class Collaboration {
                 .findFirst();
     }
 
+    public void update(@NotNull CollaborationResponseDto dto, BiFunction<UUID, UUID, Deck> fetchDeck) {
+        dto.participants().forEach(x -> {
+            Optional<Participant> participant = participants.stream()
+                    .filter(y -> y.getUserId().equals(x.userId()))
+                    .findFirst();
+            if (participant.isPresent()) {
+                participant.get().update(x, fetchDeck);
+            } else {
+                participants.add(Participant.makeFromDto(x, fetchDeck));
+            }
+        });
+    }
+
     @Override
     public String toString() {
         return "Collaboration{" +
