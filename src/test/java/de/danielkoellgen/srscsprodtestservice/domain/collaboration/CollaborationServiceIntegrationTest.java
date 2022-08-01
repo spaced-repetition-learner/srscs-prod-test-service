@@ -115,26 +115,43 @@ public class CollaborationServiceIntegrationTest {
                 .isNotNull();
     }
 
+    /*
+        Same test as above, but subject to two race-conditions:
+            When each user is created, there is delay between the creation and notification of
+                subscribed services.
+     */
     @Test
-    public void shouldAllowToExternallyAcceptParticipations() throws InterruptedException {
+    public void shouldAllowToCreateAndAcceptNewCollaborations_WithOccurringRaceConditions()
+            throws InterruptedException {
         // given
-        List<User> users = new ArrayList<>();
-        for (int i = 0; i < 4; i++) {
-            users.add(userService.externallyCreateUser(
-                    Username.makeRandomUsername(), MailAddress.makeRandomMailAddress())
-            );
-        }
-        Thread.sleep(50);
-        Collaboration collaboration = collaborationService.externallyStartCollaboration(users.stream()
+        List<UUID> usersById = IntStream.range(0, 3)
+                .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
+                        MailAddress.makeRandomMailAddress()))
                 .map(User::getUserId)
-                .toList()
-        );
-        Thread.sleep(50);
+                .toList();
 
         // when
-        collaborationService.externallyAcceptCollaboration(
-                collaboration.getCollaborationId(), collaboration.getParticipants().get(0).getParticipantId()
-        );
+        Collaboration collaboration = collaborationService.externallyCreateCollaboration(usersById);
+        usersById.forEach(userId -> {
+            collaborationService.externallyAcceptCollaboration(collaboration.getCollaborationId(),
+                    userId);
+        });
+
+        // then
+        /*
+            The interaction between collaboration- and deck-service will always take time, but is
+                    no subject to a race-condition.
+         */
+        Thread.sleep(1000);
+        Collaboration updatedCollaboration = collaborationSynchronizationService
+                .synchronizeCollaboration(collaboration.getCollaborationId());
+        assertThat(updatedCollaboration.getParticipants())
+                .hasSize(2);
+        assertThat(updatedCollaboration.getParticipants().get(0).getDeck())
+                .isNotNull();
+        assertThat(updatedCollaboration.getParticipants().get(1).getDeck())
+                .isNotNull();
+    }
 
     @Test
     public void shouldCloneCardsOnCardCreationWhenCollaborating() throws InterruptedException {
