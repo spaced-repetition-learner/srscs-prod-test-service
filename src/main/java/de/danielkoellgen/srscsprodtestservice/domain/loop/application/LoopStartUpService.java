@@ -101,7 +101,7 @@ public class LoopStartUpService {
         for(int i = 0; i < cardCount; i++) {
             Deck deck = decks.get(random.nextInt(decks.size() - 1));
             cards.add(
-                    cardService.externallyCreateNewDefaultCard(deck.getDeckId())
+                    cardService.externallyCreateEmptyDefaultCard(deck.getDeckId())
             );
             Thread.sleep(sleepPerAction);
         }
@@ -119,7 +119,7 @@ public class LoopStartUpService {
                     invitedUsers.add(selectedUser);
                 }
             }
-            collaborations.add(collaborationService.externallyStartCollaboration(
+            collaborations.add(collaborationService.externallyCreateCollaboration(
                     invitedUsers.stream()
                             .map(User::getUserId)
                             .toList()

@@ -39,4 +39,13 @@ public class Deck {
     public void disableDeck() {
         isActive = false;
     }
+
+    @Override
+    public String toString() {
+        return "Deck{" +
+                "deckId=" + deckId +
+                ", user=" + user +
+                ", isActive=" + isActive +
+                '}';
+    }
 }

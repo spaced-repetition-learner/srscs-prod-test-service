@@ -6,9 +6,7 @@ import de.danielkoellgen.srscsprodtestservice.domain.card.domain.ReviewAction;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.*;
-import de.danielkoellgen.srscsprodtestservice.web.userservice.UserClient;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,14 +46,15 @@ public class CardClient {
 
     public @NotNull Optional<Card> createEmptyCard(@NotNull Deck deck, @NotNull CardType cardType) {
         CardRequestDto requestDto = new CardRequestDto(
-                deck.getDeckId(), CardTypeDto.fromCardType(cardType), null, null, null);
+                deck.getDeckId(), CardTypeDto.fromCardType(cardType), null, null, null
+        );
+        String uri = deckServiceAddress + "/cards";
 
-        logger.debug("Requesting Deck-Service to create a new Card. Address is POST {}",
-                deckServiceAddress+"/cards");
-        logger.trace("{}", requestDto);
+        logger.trace("Calling POST {} to create an empty {}-Card...", uri, cardType);
+        logger.debug("{}", requestDto);
 
         try {
-            CardResponseDto responseDto = cardClient.post().uri(deckServiceAddress + "/cards")
+            CardResponseDto responseDto = cardClient.post().uri(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
@@ -64,16 +64,18 @@ public class CardClient {
                     .bodyToMono(CardResponseDto.class)
                     .block();
             assert responseDto != null;
-            logger.debug("Request successful.");
-            logger.trace("{}", responseDto);
+
+            logger.trace("Request successful. Empty {}-Card created.", cardType);
+            logger.debug("{}", responseDto);
+
             return Optional.of(new Card(responseDto.cardId(), deck, responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -100,12 +102,18 @@ public class CardClient {
                     .bodyToMono(CardResponseDto.class)
                     .block();
             assert responseDto != null;
+
+            logger.trace("Request successful. Card overridden.");
+            logger.debug("{}", responseDto);
+
             return Optional.of(new Card(responseDto.cardId(), rootCard.getDeck(), responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -137,8 +145,13 @@ public class CardClient {
     }
 
     public @NotNull Optional<Card> fetchCard(@NotNull UUID cardId) {
+        String uri = deckServiceAddress + "/cards/" + cardId;
+
+        logger.trace("Calling GET {}...", uri);
+
         try {
-            CardResponseDto responseDto = cardClient.get().uri(deckServiceAddress + "/cards/" + cardId)
+            CardResponseDto responseDto = cardClient.get()
+                    .uri(uri)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
@@ -146,13 +159,21 @@ public class CardClient {
                     .bodyToMono(CardResponseDto.class)
                     .block();
             assert responseDto != null;
-            Deck deck = deckRepository.findById(responseDto.deckId()).get();
+
+            logger.trace("Request successful. Card fetched.");
+            logger.debug("{}", responseDto);
+
+            logger.trace("Fetching Deck by id to map from CardResponseDTO to Card...");
+            Deck deck = deckRepository.findById(responseDto.deckId()).orElseThrow();
+
             return Optional.of(new Card(responseDto.cardId(), deck, responseDto.getIsActive()));
 
         } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
         }
     }

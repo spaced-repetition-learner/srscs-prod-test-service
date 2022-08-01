@@ -38,4 +38,13 @@ public class Card {
     public void disableCard() {
         isActive = false;
     }
+
+    @Override
+    public String toString() {
+        return "Card{" +
+                "cardId=" + cardId +
+                ", deckId=" + deck.getDeckId() +
+                ", isActive=" + isActive +
+                '}';
+    }
 }

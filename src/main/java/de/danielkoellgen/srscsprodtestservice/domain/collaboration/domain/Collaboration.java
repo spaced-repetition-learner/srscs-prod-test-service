@@ -30,4 +30,12 @@ public class Collaboration {
         this.collaborationId = collaborationId;
         this.participants = participants;
     }
+
+    @Override
+    public String toString() {
+        return "Collaboration{" +
+                "collaborationId=" + collaborationId +
+                ", participants=" + participants +
+                '}';
+    }
 }

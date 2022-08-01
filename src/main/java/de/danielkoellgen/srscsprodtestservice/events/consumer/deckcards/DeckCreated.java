@@ -40,7 +40,7 @@ public class DeckCreated extends AbstractConsumerEvent {
 
     @Override
     public String toString() {
-        return "UserCreated{" +
+        return "DeckCreated{" +
                 "eventId=" + eventId +
                 ", transactionId=" + transactionId +
                 ", eventName='" + eventName + '\'' +

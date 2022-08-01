@@ -34,4 +34,13 @@ public class User {
         this.username = username;
         this.isActive = isActive;
     }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userId=" + userId +
+                ", username=" + username.getUsername() +
+                ", isActive=" + isActive +
+                '}';
+    }
 }

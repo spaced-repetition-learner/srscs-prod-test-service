@@ -9,6 +9,8 @@ import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckReposit
 import de.danielkoellgen.srscsprodtestservice.web.deckservice.CardClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,8 @@ public class CardService {
     private final DeckRepository deckRepository;
     private final CardRepository cardRepository;
 
+    private final Logger logger = LoggerFactory.getLogger(CardService.class);
+
     @Autowired
     public CardService(CardClient cardClient, DeckRepository deckRepository, CardRepository cardRepository) {
         this.cardClient = cardClient;
@@ -30,43 +34,58 @@ public class CardService {
         this.cardRepository = cardRepository;
     }
 
-    public @NotNull Card externallyCreateNewDefaultCard(@NotNull UUID deckId) {
-        Deck deck = deckRepository.findById(deckId).get();
+    public @NotNull Card externallyCreateEmptyDefaultCard(@NotNull UUID deckId) {
+        logger.trace("Externally creating an empty Default-Card.");
+        logger.trace("Fetching Deck by id {}...", deckId);
+        Deck deck = deckRepository.findById(deckId).orElseThrow();
+        logger.debug("{}", deck);
+
+        if (!deck.getIsActive()) {
+            throw new RuntimeException("Not allowed to add Cards to a disabled Deck.");
+        }
+
         Optional<Card> optionalCard = cardClient.createEmptyCard(deck, CardType.DEFAULT);
         if (optionalCard.isEmpty()) {
             throw new RuntimeException("Failed to externally create Card.");
         }
         Card newCard = optionalCard.get();
+        logger.info("Empty Default-Card externally created.");
+        logger.debug("{}", newCard);
+
         cardRepository.save(newCard);
+        logger.trace("New Default-Card saved.");
         return newCard;
     }
 
-    public @Nullable Card synchronizeCard(@NotNull UUID cardId) {
-        Optional<Card> optionalCard = cardClient.fetchCard(cardId);
+    public @NotNull Card externallyOverrideCardAsEmptyDefaultCard(@NotNull UUID rootCardId) {
+        logger.trace("Externally overriding Root-Card as an empty Default-Card...");
+        logger.trace("Fetching Root-Card by id {}...", rootCardId);
+        Card rootCard = cardRepository.findById(rootCardId).orElseThrow();
+        logger.debug("{}", rootCard);
 
-        if (optionalCard.isEmpty()) {
-            cardRepository.deleteById(cardId);
-            return null;
-        }
-
-        cardRepository.save(optionalCard.get());
-        return optionalCard.get();
-    }
-
-    public @NotNull Card externallyEditCardAsDefaultCard(@NotNull UUID cardId) {
-        Card rootCard = cardRepository.findById(cardId).get();
         Optional<Card> newCard = cardClient.overrideCardAsEmptyCard(rootCard, CardType.DEFAULT);
         if (newCard.isEmpty()) {
             throw new RuntimeException("Failed to externally edit Card.");
         }
+        logger.info("Root-Card externally overridden as an empty Default-Card.");
+        logger.debug("{}", newCard.get());
+        cardRepository.save(newCard.get());
+        logger.trace("New Card saved.");
+
         rootCard.disableCard();
         cardRepository.save(rootCard);
-        cardRepository.save(newCard.get());
+        logger.trace("Disabled Root-Card saved.");
+
         return newCard.get();
     }
 
     public void reviewCard(@NotNull UUID cardId, @NotNull ReviewAction reviewAction) {
-        Card card = cardRepository.findById(cardId).get();
+        logger.trace("Reviewing Card as {}...", reviewAction);
+        logger.trace("Fetching Card by id {}...", cardId);
+        Card card = cardRepository.findById(cardId).orElseThrow();
+        logger.debug("{}", card);
+
         cardClient.reviewCard(card, reviewAction);
+        logger.info("Card reviewed as {}.", reviewAction);
     }
 }

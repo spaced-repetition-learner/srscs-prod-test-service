@@ -141,12 +141,12 @@ public class LoopIterationService {
 
     private void createCardWithRandomDeck() {
         Deck randomDeck = pickRandomDeck();
-        cardService.externallyCreateNewDefaultCard(randomDeck.getDeckId());
+        cardService.externallyCreateEmptyDefaultCard(randomDeck.getDeckId());
     }
 
     private void startCollaborationWithRandomUsers() {
         List<User> uniqueUsers = pickUniqueRandomUsers(collabSize);
-        collaborationService.externallyStartCollaboration(uniqueUsers.stream()
+        collaborationService.externallyCreateCollaboration(uniqueUsers.stream()
                 .map(User::getUserId)
                 .toList()
         );
@@ -164,7 +164,7 @@ public class LoopIterationService {
 
     private void overrideRandomCard() {
         Card randomCard = pickRandomCard();
-        cardService.externallyEditCardAsDefaultCard(randomCard.getCardId());
+        cardService.externallyOverrideCardAsEmptyDefaultCard(randomCard.getCardId());
     }
 
     private void reviewRandomCard() {

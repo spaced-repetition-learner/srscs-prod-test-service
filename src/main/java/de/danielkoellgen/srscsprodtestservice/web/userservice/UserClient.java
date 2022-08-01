@@ -42,13 +42,15 @@ public class UserClient {
 
     public @NotNull Optional<User> createUser(Username username, MailAddress mail, Name firstName, Name lastName) {
         UserRequestDto requestDto = new UserRequestDto(
-                username.getUsername(), mail.getMailAddress(), firstName.getName(), lastName.getName());
-        logger.debug("Requesting User-Service to create a new User. Address is POST {}",
-                userServiceAddress+"/users");
-        logger.trace("{}", requestDto);
+                username.getUsername(), mail.getMailAddress(), firstName.getName(), lastName.getName()
+        );
+        String uri = userServiceAddress + "/users";
+
+        logger.trace("Calling POST {} to create a new User...", uri);
+        logger.debug("{}", requestDto);
 
         try {
-            UserResponseDto responseDto = userClient.post().uri(userServiceAddress + "/users")
+            UserResponseDto responseDto = userClient.post().uri(uri)
                     .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .bodyValue(requestDto)
                     .retrieve()

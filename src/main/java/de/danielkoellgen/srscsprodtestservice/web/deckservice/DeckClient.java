@@ -18,7 +18,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @Scope("singleton")
@@ -38,13 +40,13 @@ public class DeckClient {
 
     public @NotNull Optional<Deck> createDeck(User user, DeckName deckName) {
         DeckRequestDto requestDto = new DeckRequestDto(user.getUserId(), deckName.getName());
+        String uri = deckServiceAddress + "/decks";
 
-        logger.debug("Requesting Deck-Service to create a new Deck. Address is POST {}",
-                deckServiceAddress+"/decks");
-        logger.trace("{}", requestDto);
+        logger.trace("Calling POST {} to create a new Deck for '{}'...", uri, user.getUsername().getUsername());
+        logger.debug("{}", requestDto);
 
         try {
-            DeckResponseDto responseDto = deckClient.post().uri(deckServiceAddress + "/decks")
+            DeckResponseDto responseDto = deckClient.post().uri(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
@@ -54,16 +56,18 @@ public class DeckClient {
                     .bodyToMono(DeckResponseDto.class)
                     .block();
             assert responseDto != null;
-            logger.debug("Request successful.");
-            logger.trace("{}", responseDto);
+
+            logger.trace("Request successful. Deck created.");
+            logger.debug("{}", responseDto);
+
             return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
         }
     }
