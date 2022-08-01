@@ -55,7 +55,7 @@ public class CardService {
 
     public @NotNull Card externallyEditCardAsDefaultCard(@NotNull UUID cardId) {
         Card rootCard = cardRepository.findById(cardId).get();
-        Optional<Card> newCard = cardClient.editCardAsEmpty(rootCard, CardType.DEFAULT);
+        Optional<Card> newCard = cardClient.overrideCardAsEmptyCard(rootCard, CardType.DEFAULT);
         if (newCard.isEmpty()) {
             throw new RuntimeException("Failed to externally edit Card.");
         }

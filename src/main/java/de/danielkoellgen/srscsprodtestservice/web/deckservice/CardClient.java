@@ -78,35 +78,19 @@ public class CardClient {
         }
     }
 
-    public void reviewCard(@NotNull Card card, @NotNull ReviewAction reviewAction) {
-        ReviewRequestDto requestDto = new ReviewRequestDto(ReviewActionDto.fromReviewAction(reviewAction));
-
-        try {
-            cardClient.post()
-                    .uri(deckServiceAddress+"/cards/" + card.getCardId() + "/scheduler/activity/review")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestDto)
-                    .retrieve()
-                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error));
-
-        } catch (WebClientResponseException e) {
-            return;
-
-        } catch (Exception e) {
-            return;
-        }
-    }
-
-    public @NotNull Optional<Card> editCardAsEmpty(@NotNull Card rootCard, @NotNull CardType cardType) {
+    public @NotNull Optional<Card> overrideCardAsEmptyCard(@NotNull Card rootCard, @NotNull CardType cardType) {
         CardRequestDto requestDto = new CardRequestDto(
                 rootCard.getDeck().getDeckId(),
                 CardTypeDto.fromCardType(cardType),
                 null, null, null
         );
+        String uri = deckServiceAddress + "/cards/" + rootCard.getCardId();
+
+        logger.trace("Calling POST {} to override as an empty {}-Card.", uri, cardType);
+        logger.debug("{}", requestDto);
 
         try {
-            CardResponseDto responseDto = cardClient.post().uri(deckServiceAddress + "/cards/" + rootCard.getCardId())
+            CardResponseDto responseDto = cardClient.post().uri(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
@@ -123,6 +107,32 @@ public class CardClient {
 
         } catch (Exception e) {
             return Optional.empty();
+        }
+    }
+
+    public void reviewCard(@NotNull Card card, @NotNull ReviewAction reviewAction) {
+        ReviewRequestDto requestDto = new ReviewRequestDto(ReviewActionDto.fromReviewAction(reviewAction));
+        String uri = deckServiceAddress+"/cards/" + card.getCardId() + "/scheduler/activity/review";
+
+        logger.trace("Calling POST {} to review as {}.", uri, reviewAction);
+        logger.debug("{}", requestDto);
+
+        try {
+            cardClient.post()
+                    .uri(uri)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestDto)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error));
+
+            logger.trace("Request successful. Card reviewed.");
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
         }
     }
 
