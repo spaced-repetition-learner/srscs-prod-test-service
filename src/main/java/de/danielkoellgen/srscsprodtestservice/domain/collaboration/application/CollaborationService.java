@@ -2,6 +2,9 @@ package de.danielkoellgen.srscsprodtestservice.domain.collaboration.application;
 
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.domain.Collaboration;
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.repository.CollaborationRepository;
+import de.danielkoellgen.srscsprodtestservice.domain.deck.application.DeckService;
+import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
+import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.repository.ParticipantRepository;
@@ -24,7 +27,10 @@ public class CollaborationService {
 
     private final CollabClient collabClient;
 
+    private final DeckService deckService;
+
     private final UserRepository userRepository;
+    private final DeckRepository deckRepository;
     private final CollaborationRepository collaborationRepository;
     private final ParticipantRepository participantRepository;
 
@@ -32,10 +38,13 @@ public class CollaborationService {
 
 
     @Autowired
-    public CollaborationService(CollabClient collabClient, UserRepository userRepository,
-            CollaborationRepository collaborationRepository, ParticipantRepository participantRepository) {
+    public CollaborationService(CollabClient collabClient, DeckService deckService, UserRepository userRepository,
+            DeckRepository deckRepository, CollaborationRepository collaborationRepository,
+            ParticipantRepository participantRepository) {
         this.collabClient = collabClient;
+        this.deckService = deckService;
         this.userRepository = userRepository;
+        this.deckRepository = deckRepository;
         this.collaborationRepository = collaborationRepository;
         this.participantRepository = participantRepository;
     }
@@ -80,6 +89,27 @@ public class CollaborationService {
         participant.acceptCollaborationInvitation();
         participantRepository.save(participant);
         logger.info("Collaboration accepted.");
+        logger.trace("Updated Participant saved.");
+        logger.debug("{}", participant);
+    }
+
+    public void addDeckToParticipant(@NotNull UUID collaborationId, @NotNull UUID userId, @NotNull UUID deckId) {
+        logger.trace("Updating Participant with Deck...");
+        logger.trace("Fetching Collaboration by id {}...", collaborationId);
+        Collaboration collaboration = collaborationRepository.findById(collaborationId).orElseThrow();
+        logger.debug("{}", collaboration);
+
+        logger.trace("Querying Participants by user-id {}...", userId);
+        Participant participant = collaboration.findParticipant(userId).orElseThrow();
+        logger.debug("{}", participant);
+
+        logger.trace("Fetching Deck by id {}...", deckId);
+        Optional<Deck> optDeck = deckRepository.findById(deckId);
+        Deck deck = optDeck.orElseGet(() -> deckService.addExternallyCreatedDeck(deckId, userId));
+
+        participant.addDeck(deck);
+        participantRepository.save(participant);
+        logger.info("Deck added to Participant.");
         logger.trace("Updated Participant saved.");
         logger.debug("{}", participant);
     }
