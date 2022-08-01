@@ -1,6 +1,7 @@
 package de.danielkoellgen.srscsprodtestservice.events.consumer.deckcards;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import de.danielkoellgen.srscsprodtestservice.domain.card.application.CardService;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.application.DeckService;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 public class KafkaDeckCardsEventConsumer {
 
     private final DeckService deckService;
+    private final CardService cardService;
 
     @Autowired
     private Tracer tracer;
@@ -26,8 +28,9 @@ public class KafkaDeckCardsEventConsumer {
 
 
     @Autowired
-    public KafkaDeckCardsEventConsumer(DeckService deckService) {
+    public KafkaDeckCardsEventConsumer(DeckService deckService, CardService cardService) {
         this.deckService = deckService;
+        this.cardService = cardService;
     }
 
     @KafkaListener(topics = {"${kafka.topic.deckscards}"}, id = "${kafka.groupId}")
@@ -80,15 +83,51 @@ public class KafkaDeckCardsEventConsumer {
     }
 
     private void processCardCreatedEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+        Span newSpan = tracer.nextSpan().name("event-card-created");
+        try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
+            CardCreated cardCreated = new CardCreated(cardService, event);
+            logger.debug("Received 'CardCreatedEvent'.");
+            logger.debug("{}", cardCreated);
+            logger.info("Skipped 'CardCreatedEvent'...");
+//            cardCreated.execute();
+//            logger.info("Event processed.");
+
+        } finally {
+            newSpan.end();
+        }
     }
 
     private void processCardOverriddenEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+        Span newSpan = tracer.nextSpan().name("event-card-overridden");
+        try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
+            CardOverridden cardOverridden = new CardOverridden(cardService, event);
+            logger.debug("Received 'CardOverriddenEvent'.");
+            logger.debug("{}", cardOverridden);
+            logger.info("Skipped 'CardOverriddenEvent'...");
+//            cardOverridden.execute();
+//            logger.info("Event processed.");
+
+        } finally {
+            newSpan.end();
+        }
     }
 
     private void processCardDisabledEvent(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
+        Span newSpan = tracer.nextSpan().name("event-card-disabled");
+        try (Tracer.SpanInScope ws = this.tracer.withSpan(newSpan.start())) {
 
+            CardDisabled cardDisabled = new CardDisabled(event);
+            logger.debug("Received 'CardDisabledEvent'.");
+            logger.debug("{}", cardDisabled);
+            logger.info("Skipped 'CardDisabledEvent'...");
+//            cardDisabled.execute();
+//            logger.info("Event processed.");
+
+        } finally {
+            newSpan.end();
+        }
     }
 
     public static String getHeaderValue(ConsumerRecord<String, String> event, String key) {
