@@ -20,7 +20,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @Scope("singleton")
@@ -55,18 +57,51 @@ public class UserClient {
                     .bodyToMono(UserResponseDto.class)
                     .block();
             assert responseDto != null;
-            logger.debug("Request successful.");
-            logger.trace("{}", responseDto);
+
+            logger.trace("Request successful. User created.");
+            logger.debug("{}", responseDto);
+
             return Optional.of(
                     new User(responseDto.userId(), username, responseDto.isActive())
             );
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    public @NotNull Optional<UserResponseDto> fetchUser(@NotNull UUID userId) {
+        String uri = userServiceAddress + "/users?user-id=" + userId;
+
+        logger.trace("Calling GET {} to fetch a User...", uri);
+
+        try {
+            UserResponseDto responseDto = userClient
+                    .get()
+                    .uri(uri)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(UserResponseDto.class)
+                    .block();
+            assert responseDto != null;
+
+            logger.trace("Request successful. User {} fetched.", userId);
+            logger.debug("{}", responseDto);
+
+            return Optional.of(responseDto);
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+            return Optional.empty();
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
         }
     }
