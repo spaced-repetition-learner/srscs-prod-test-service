@@ -1,6 +1,7 @@
 package de.danielkoellgen.srscsprodtestservice.domain.deck.domain;
 
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
+import de.danielkoellgen.srscsprodtestservice.web.deckservice.dto.DeckResponseDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
@@ -11,21 +12,19 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "decks")
+@Getter
 @NoArgsConstructor
 public class Deck {
 
     @Id
-    @Getter
     @Column(name = "deck_id")
     @Type(type = "uuid-char")
     private @NotNull UUID deckId;
 
-    @Getter
-    @ManyToOne(cascade = {CascadeType.ALL})
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private @NotNull User user;
 
-    @Getter
     @Column(name = "is_active")
     private @NotNull Boolean isActive;
 
@@ -34,6 +33,10 @@ public class Deck {
         this.deckId = deckId;
         this.user = user;
         this.isActive = isActive;
+    }
+
+    public static @NotNull Deck makeFromDto(@NotNull DeckResponseDto dto, @NotNull User user) {
+        return new Deck(dto.deckId(), user, dto.isActive());
     }
 
     public void disableDeck() {
