@@ -38,6 +38,15 @@ public class User {
         return new User(dto.userId(), dto.getMappedUsername(), dto.isActive());
     }
 
+    public void update(@NotNull UserResponseDto dto) {
+        if (!username.equals(dto.getMappedUsername())) {
+            username = dto.getMappedUsername();
+        }
+        if (!isActive.equals(dto.isActive())) {
+            isActive = dto.isActive();
+        }
+    }
+
     @Override
     public String toString() {
         return "User{" +
