@@ -63,12 +63,14 @@ public class CollaborationService {
         return collaboration;
     }
 
-    public void externallyAcceptCollaboration(@NotNull UUID collaborationId, @NotNull UUID participantId) {
+    public void externallyAcceptCollaboration(@NotNull UUID collaborationId, @NotNull UUID userId) {
         logger.trace("Externally accepting a Participation in a Collaboration...");
         logger.trace("Fetching Collaboration by id {}...", collaborationId);
-        Collaboration collaboration = collaborationRepository.findById(collaborationId).get();
+        Collaboration collaboration = collaborationRepository.findById(collaborationId).orElseThrow();
         logger.debug("{}", collaboration);
-        Participant participant = participantRepository.findById(participantId).get();
+
+        logger.trace("Querying Participants by user-id {}...", userId);
+        Participant participant = collaboration.findParticipant(userId).orElseThrow();
         logger.debug("{}", participant);
 
         Boolean response =  collabClient.acceptCollaboration(collaboration, participant);
