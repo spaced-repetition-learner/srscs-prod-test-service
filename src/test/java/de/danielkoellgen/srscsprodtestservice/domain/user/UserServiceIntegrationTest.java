@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @SpringBootTest
 public class UserServiceIntegrationTest {
 
@@ -25,9 +27,7 @@ public class UserServiceIntegrationTest {
     }
 
     @BeforeEach
-    public void setUp() {
-
-    }
+    public void setUp() {}
 
     @AfterEach
     public void cleanUp() {
@@ -35,10 +35,17 @@ public class UserServiceIntegrationTest {
     }
 
     @Test
-    public void shouldAllowToCreateUser() {
+    public void shouldAllowToExternallyCreateUsers() {
+        // given
         Username username = Username.makeRandomUsername();
         MailAddress mailAddress = MailAddress.makeRandomMailAddress();
 
+        // when
         User user = userService.externallyCreateUser(username, mailAddress);
+
+        // then
+        User fetchedUser = userRepository.findById(user.getUserId()).orElseThrow();
+        assertThat(fetchedUser.getUsername())
+                .isEqualTo(username);
     }
 }
