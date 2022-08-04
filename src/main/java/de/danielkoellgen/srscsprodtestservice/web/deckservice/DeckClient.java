@@ -46,32 +46,43 @@ public class DeckClient {
                 user.getUsername().getUsername());
         logger.debug("{}", requestDto);
 
-        try {
-            DeckResponseDto responseDto = deckClient.post().uri(uri)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestDto)
-                    .retrieve()
-                    .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error))
-                    .bodyToMono(DeckResponseDto.class)
-                    .block();
-            assert responseDto != null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                if (i > 0) {
+                    logger.trace("Retrying after 500ms...");
+                    Thread.sleep(500);
+                }
+                DeckResponseDto responseDto = deckClient.post().uri(uri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .bodyValue(requestDto)
+                        .retrieve()
+                        .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
+                                clientResponse.createException().flatMap(Mono::error))
+                        .bodyToMono(DeckResponseDto.class)
+                        .block();
+                assert responseDto != null;
 
-            logger.trace("Request successful. Deck created.");
-            logger.debug("{}", responseDto);
+                logger.trace("Request successful. Deck created.");
+                logger.debug("{}", responseDto);
 
-            return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
+                return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
 
-        } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
-                    e.getMessage(), e);
-            return Optional.empty();
+            } catch (WebClientResponseException e) {
+                if (!e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+                    logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                            e.getMessage(), e);
+                    return Optional.empty();
+                } else {
+                    logger.warn("Request failed externally. Resource NOT_FOUND.");
+                }
 
-        } catch (Exception e) {
-            logger.error("Request failed locally. {}.", e.getMessage(), e);
-            return Optional.empty();
+            } catch (Exception e) {
+                logger.error("Request failed locally. {}.", e.getMessage(), e);
+                return Optional.empty();
+            }
         }
+        return Optional.empty();
     }
 
     public @NotNull List<DeckResponseDto> fetchDeckByUser(@NotNull UUID userId) {

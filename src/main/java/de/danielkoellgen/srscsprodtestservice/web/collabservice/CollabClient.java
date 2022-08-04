@@ -54,39 +54,50 @@ public class CollabClient {
         logger.trace("Calling POST {} to start a new Collaboration with {} Users...", uri, users.size());
         logger.debug("{}", requestDto);
 
-        try {
-            CollaborationResponseDto responseDto = collabClient.post()
-                    .uri(collabServiceAddress + "/collaborations")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .bodyValue(requestDto)
-                    .retrieve()
-                    .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error))
-                    .bodyToMono(CollaborationResponseDto.class)
-                    .block();
-            assert responseDto != null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                if (i > 0) {
+                    logger.trace("Retrying after 1000ms...");
+                    Thread.sleep(1000);
+                }
+                CollaborationResponseDto responseDto = collabClient.post()
+                        .uri(collabServiceAddress + "/collaborations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .bodyValue(requestDto)
+                        .retrieve()
+                        .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
+                                clientResponse.createException().flatMap(Mono::error))
+                        .bodyToMono(CollaborationResponseDto.class)
+                        .block();
+                assert responseDto != null;
 
-            logger.trace("Request successful. Collaboration created.");
-            logger.debug("{}", responseDto);
+                logger.trace("Request successful. Collaboration created.");
+                logger.debug("{}", responseDto);
 
-            List<Participant> participants = responseDto.participants().stream()
-                    .map(x -> new Participant(
-                            users.stream()
-                                    .filter(y -> y.getUserId().equals(x.userId()))
-                                    .findFirst().orElseThrow(),
-                            x.getMappedParticipantStatus()))
-                    .toList();
-            return Optional.of(new Collaboration(responseDto.collaborationId(), participants));
+                List<Participant> participants = responseDto.participants().stream()
+                        .map(x -> new Participant(
+                                users.stream()
+                                        .filter(y -> y.getUserId().equals(x.userId()))
+                                        .findFirst().orElseThrow(),
+                                x.getMappedParticipantStatus()))
+                        .toList();
+                return Optional.of(new Collaboration(responseDto.collaborationId(), participants));
 
-        } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
-            return Optional.empty();
+            } catch (WebClientResponseException e) {
+                if (!e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+                    logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
+                    return Optional.empty();
+                } else {
+                    logger.warn("Request failed externally. Resource NOT_FOUND.");
+                }
 
-        } catch (Exception e) {
-            logger.error("Request failed locally. {}.", e.getMessage(), e);
-            return Optional.empty();
+            } catch (Exception e) {
+                logger.error("Request failed locally. {}.", e.getMessage(), e);
+                return Optional.empty();
+            }
         }
+        return Optional.empty();
     }
 
     public Boolean acceptCollaboration(@NotNull Collaboration collaboration,
