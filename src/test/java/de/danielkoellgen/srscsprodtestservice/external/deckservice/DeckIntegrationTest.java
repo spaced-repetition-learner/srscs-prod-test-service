@@ -1,13 +1,14 @@
-package de.danielkoellgen.srscsprodtestservice.domain.deck;
+package de.danielkoellgen.srscsprodtestservice.external.deckservice;
 
-import de.danielkoellgen.srscsprodtestservice.domain.deck.application.DeckService;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
+import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.MailAddress;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
 import de.danielkoellgen.srscsprodtestservice.domain.user.application.UserService;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.domain.user.repository.UserRepository;
+import de.danielkoellgen.srscsprodtestservice.web.deckservice.DeckClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,19 +18,20 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class DeckServiceIntegrationTest {
+public class DeckIntegrationTest {
 
     private final UserService userService;
-    private final DeckService deckService;
+
+    private final DeckClient deckClient;
 
     private final UserRepository userRepository;
     private final DeckRepository deckRepository;
 
     @Autowired
-    public DeckServiceIntegrationTest(UserService userService, DeckService deckService,
+    public DeckIntegrationTest(UserService userService, DeckClient deckClient,
             UserRepository userRepository, DeckRepository deckRepository) {
         this.userService = userService;
-        this.deckService = deckService;
+        this.deckClient = deckClient;
         this.userRepository = userRepository;
         this.deckRepository = deckRepository;
     }
@@ -44,35 +46,26 @@ public class DeckServiceIntegrationTest {
         userRepository.deleteAll();
     }
 
+    /*
+        Given a user,
+        when a new deck for this user is created,
+        then the response should verify the creation of the particular deck.
+     */
     @Test
-    public void shouldAllowToExternallyCreateDecks() throws InterruptedException {
+    public void shouldAllowToExternallyCreateDecks() throws Exception {
         // given
         User user = userService.externallyCreateUser(
                 Username.makeRandomUsername(), MailAddress.makeRandomMailAddress());
+        DeckName deckName = new DeckName("anyName");
 
         // when
-        Thread.sleep(1000);     // waiting for 'UserCreated'-Event to arrive
-        Deck deck = deckService.externallyCreateDeck(user.getUserId());
+        Deck deck = deckClient.createDeck(user, deckName).orElseThrow();
 
         // then
+        assertThat(deck.getIsActive())
+                .isTrue();
         assertThat(deck.getUser())
                 .usingRecursiveComparison()
                 .isEqualTo(user);
-
-        // and then
-        Deck localDeck = deckRepository.findById(deck.getDeckId()).orElseThrow();
-        assertThat(localDeck)
-                .usingRecursiveComparison()
-                .isEqualTo(deck);
-    }
-
-    @Test
-    public void shouldAllowToExternallyCreateDecks_WithOccurringRaceCondition() {
-        // given
-        User newUser = userService.externallyCreateUser(
-                Username.makeRandomUsername(), MailAddress.makeRandomMailAddress());
-
-        // when
-        Deck deck = deckService.externallyCreateDeck(newUser.getUserId());
     }
 }

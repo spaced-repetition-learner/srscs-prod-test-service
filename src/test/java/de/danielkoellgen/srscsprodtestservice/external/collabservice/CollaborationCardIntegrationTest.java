@@ -1,4 +1,4 @@
-package de.danielkoellgen.srscsprodtestservice.domain.collaboration;
+package de.danielkoellgen.srscsprodtestservice.external.collabservice;
 
 import de.danielkoellgen.srscsprodtestservice.domain.card.application.CardService;
 import de.danielkoellgen.srscsprodtestservice.domain.card.application.CardSynchronizationService;
@@ -11,6 +11,7 @@ import de.danielkoellgen.srscsprodtestservice.domain.collaboration.repository.Co
 import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.MailAddress;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.repository.ParticipantRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.user.application.UserService;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
@@ -29,7 +30,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-public class CollaborationServiceIntegrationTest {
+public class CollaborationCardIntegrationTest {
 
     private final UserService userService;
     private final CardService cardService;
@@ -47,7 +48,7 @@ public class CollaborationServiceIntegrationTest {
 
 
     @Autowired
-    public CollaborationServiceIntegrationTest(UserService userService,
+    public CollaborationCardIntegrationTest(UserService userService,
             CollaborationService collaborationService, CardService cardService,
             CollaborationSynchronizationService collaborationSynchronizationService,
             CardSynchronizationService cardSynchronizationService, CardRepository cardRepository,
@@ -81,132 +82,68 @@ public class CollaborationServiceIntegrationTest {
     }
 
     /*
-        Creates new users which are then used to start a new collaboration. Afterwards the
-                collaboration is accepted by each individual user.
-
-        If successful, each user should have a unique deck which is linked to the collaboration.
+        Given an active collaboration of two users,
+        when user-1 adds two cards to his deck,
+        then user-2 should also receive a copy of those two cards.
      */
-    @Test
-    public void shouldAllowToCreateAndAcceptNewCollaborations() throws InterruptedException {
-        // given
-        List<UUID> usersById = IntStream.range(0, 3)
-                .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
-                        MailAddress.makeRandomMailAddress()))
-                .map(User::getUserId)
-                .toList();
-
-        // when
-        Thread.sleep(600);
-        Collaboration collaboration = collaborationService.externallyCreateCollaboration(usersById);
-        usersById.forEach(userId -> {
-            collaborationService.externallyAcceptCollaboration(collaboration.getCollaborationId(),
-                    userId);
-        });
-
-        // then
-        Thread.sleep(1000);
-        Collaboration updatedCollaboration = collaborationSynchronizationService
-                .synchronizeCollaboration(collaboration.getCollaborationId());
-        assertThat(updatedCollaboration.getParticipants())
-                .hasSize(2);
-        assertThat(updatedCollaboration.getParticipants().get(0).getDeck())
-                .isNotNull();
-        assertThat(updatedCollaboration.getParticipants().get(1).getDeck())
-                .isNotNull();
-    }
-
-    /*
-        Same test as above, but subject to two race-conditions:
-            When each user is created, there is delay between the creation and notification of
-                subscribed services.
-     */
-    @Test
-    public void shouldAllowToCreateAndAcceptNewCollaborations_WithOccurringRaceConditions()
-            throws InterruptedException {
-        // given
-        List<UUID> usersById = IntStream.range(0, 3)
-                .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
-                        MailAddress.makeRandomMailAddress()))
-                .map(User::getUserId)
-                .toList();
-
-        // when
-        Collaboration collaboration = collaborationService.externallyCreateCollaboration(usersById);
-        usersById.forEach(userId -> {
-            collaborationService.externallyAcceptCollaboration(collaboration.getCollaborationId(),
-                    userId);
-        });
-
-        // then
-        /*
-            The interaction between collaboration- and deck-service will always take time, but is
-                    no subject to a race-condition.
-         */
-        Thread.sleep(1000);
-        Collaboration updatedCollaboration = collaborationSynchronizationService
-                .synchronizeCollaboration(collaboration.getCollaborationId());
-        assertThat(updatedCollaboration.getParticipants())
-                .hasSize(2);
-        assertThat(updatedCollaboration.getParticipants().get(0).getDeck())
-                .isNotNull();
-        assertThat(updatedCollaboration.getParticipants().get(1).getDeck())
-                .isNotNull();
-    }
-
     @Test
     public void shouldCloneCardsOnCardCreationWhenCollaborating() throws InterruptedException {
         // given
         Collaboration collaboration = externallyCreateCollaboration(2);
+        Participant p1 = collaboration.getParticipants().get(0);
+        Participant p2 = collaboration.getParticipants().get(1);
 
         // when
-        cardService.externallyCreateEmptyDefaultCard(
-                collaboration.getParticipants().get(0).getDeck().getDeckId());
-        cardService.externallyCreateEmptyDefaultCard(
-                collaboration.getParticipants().get(0).getDeck().getDeckId());
+        IntStream.range(0, 2).forEach(x -> cardService
+                .externallyCreateEmptyDefaultCard(p1.getDeck().getDeckId()));
         Thread.sleep(1000);
 
         // then
-        List<Card> sourceCards = cardSynchronizationService.synchronizeCardsByDeck(
-                collaboration.getParticipants().get(0).getDeck().getDeckId());
-        assertThat(sourceCards)
-                .hasSize(2);
-
-        // and then
-        List<Card> clonedCards = cardSynchronizationService.synchronizeCardsByDeck(
-                collaboration.getParticipants().get(1).getDeck().getDeckId());
-        assertThat(clonedCards)
+        List<Card> p2Cards = cardSynchronizationService
+                .synchronizeCardsByDeck(p2.getDeck().getDeckId());
+        assertThat(p2Cards)
                 .hasSize(2);
     }
 
+    /*
+        Given an active collaboration of two users each having a copy of the same card,
+        when user-1 updates his card,
+        then user-2 should also receive that update for his card which can be verified by
+                having two cards, one active and one disabled where the active card is the updated
+                version.
+     */
     @Test
     public void shouldCloneOverrideOnCardOverrideWhenCollaborating() throws InterruptedException {
         // given
         Collaboration collaboration = externallyCreateCollaboration(2);
+        Participant p1 = collaboration.getParticipants().get(0);
+        Participant p2 = collaboration.getParticipants().get(1);
+        Card p1Card = cardService.externallyCreateEmptyDefaultCard(p1.getDeck().getDeckId());
 
         // when
-        Card initialCard = cardService.externallyCreateEmptyDefaultCard(
-                collaboration.getParticipants().get(0).getDeck().getDeckId());
-        Thread.sleep(500);
-        Card overrideCard = cardService.externallyOverrideCardAsEmptyDefaultCard(
-                initialCard.getCardId());
+        cardService.externallyOverrideCardAsEmptyDefaultCard(p1Card.getCardId());
         Thread.sleep(1000);
 
         // then
-        List<Card> clonedCards = cardSynchronizationService.synchronizeCardsByDeck(
-                collaboration.getParticipants().get(1).getDeck().getDeckId());
-        BiFunction<List<Card>, Boolean, List<Card>> filteredByStatus = (l, b) -> l.stream()
-                .filter(x -> x.getIsActive().equals(b))
+        List<Card> p2Cards = cardSynchronizationService
+                .synchronizeCardsByDeck(p2.getDeck().getDeckId());
+        List<Card> p2ActiveCards = p2Cards
+                .stream()
+                .filter(Card::getIsActive)
                 .toList();
-        assertThat(clonedCards)
+        List<Card> p2InactiveCards = p2Cards
+                .stream()
+                .filter(x -> !x.getIsActive())
+                .toList();
+        assertThat(p2Cards)
                 .hasSize(2);
-        assertThat(filteredByStatus.apply(clonedCards, true))
+        assertThat(p2ActiveCards)
                 .hasSize(1);
-        assertThat(filteredByStatus.apply(clonedCards, false))
+        assertThat(p2InactiveCards)
                 .hasSize(1);
-
     }
 
-    private Collaboration externallyCreateCollaboration(Integer size) {
+    private Collaboration externallyCreateCollaboration(Integer size) throws InterruptedException {
         List<UUID> usersById = IntStream.range(0, size)
                 .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
                         MailAddress.makeRandomMailAddress()))
@@ -217,6 +154,17 @@ public class CollaborationServiceIntegrationTest {
             collaborationService.externallyAcceptCollaboration(collaboration.getCollaborationId(),
                     userId);
         });
-        return collaboration;
+        /*
+            Prevent user-sided race-condition.
+         */
+        Collaboration syncedCollaboration;
+        do {
+            Thread.sleep(500);
+            syncedCollaboration = collaborationSynchronizationService
+                    .synchronizeCollaboration(collaboration.getCollaborationId());
+        } while (syncedCollaboration.getParticipants()
+                .stream()
+                .allMatch(x -> x.getDeck() != null));
+        return syncedCollaboration;
     }
 }
