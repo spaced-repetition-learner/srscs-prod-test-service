@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -44,5 +45,19 @@ public class UserService {
         userRepository.save(newUser);
         logger.trace("New User saved.");
         return newUser;
+    }
+
+    public void externallyDisableUser(@NotNull UUID userId) {
+        logger.trace("Disable user... [userId={}]", userId);
+        User user = userRepository.findById(userId).orElseThrow();
+
+        Boolean response = userClient.disableUser(userId);
+        if (!response) {
+            throw new RuntimeException("Failed to externally disable user.");
+        }
+        user.disable();
+
+        userRepository.save(user);
+        logger.info("User '{}' disabled.", user.getUsername().getUsername());
     }
 }

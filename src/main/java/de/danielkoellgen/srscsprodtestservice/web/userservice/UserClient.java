@@ -20,7 +20,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -105,6 +104,36 @@ public class UserClient {
         } catch (Exception e) {
             logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
+        }
+    }
+
+    public @NotNull Boolean disableUser(@NotNull UUID userId) {
+        String uri = userServiceAddress + "/users/" + userId;
+
+        logger.trace("Disabling user '{}'...", userId);
+
+        try {
+            HttpStatus responseCode = userClient
+                    .delete()
+                    .uri(uri)
+                    .exchangeToMono(clientResponse -> {
+                        if (clientResponse.statusCode() == HttpStatus.OK) {
+                            return clientResponse.bodyToMono(HttpStatus.class);
+                        } else {
+                            return clientResponse.createException().flatMap(Mono::error);
+                        }
+                    })
+                    .block();
+            return true;
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getStatusCode(),
+                    e.getMessage(), e);
+            return false;
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return false;
         }
     }
 }

@@ -57,6 +57,10 @@ public class User {
         }
     }
 
+    public void disable() {
+        this.isActive = false;
+    }
+
     @Override
     public String toString() {
         return "User{" +
