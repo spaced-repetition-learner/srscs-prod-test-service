@@ -45,6 +45,15 @@ public class DeckSynchronizationService {
                 .toList();
     }
 
+    public Deck synchronizeDeck(UUID deckId) {
+        Optional<DeckResponseDto> remoteDeck = deckClient.fetchDeck(deckId);
+        if (remoteDeck.isEmpty()) {
+            logger.error("Synchronization failed. Remote deck does not exist. [deckId={}]", deckId);
+            throw new RuntimeException("Expected remote deck does not exist. [deckId="+deckId+"]");
+        }
+        return synchronizeDeck(remoteDeck.get());
+    }
+
     public Deck synchronizeDeck(@NotNull DeckResponseDto remoteDeck) {
         logger.trace("Synchronizing local- w/ remote deck '{}'...", remoteDeck.deckId());
         Optional<Deck> optLocalDeck = deckRepository.findById(remoteDeck.deckId());
