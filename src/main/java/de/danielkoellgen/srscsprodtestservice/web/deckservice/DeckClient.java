@@ -158,4 +158,32 @@ public class DeckClient {
         }
         return Optional.empty();
     }
+
+    public @NotNull Boolean disableDeck(@NotNull UUID deckId) {
+        String uri = deckServiceAddress + "/decks/" + deckId;
+
+        try {
+            HttpStatus response = deckClient
+                    .delete()
+                    .uri(uri)
+                    .exchangeToMono(clientResponse -> {
+                        if (clientResponse.statusCode() == HttpStatus.OK) {
+                            return clientResponse.bodyToMono(HttpStatus.class);
+                        } else {
+                            return clientResponse.createException().flatMap(Mono::error);
+                        }
+                    })
+                    .block();
+            return true;
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getStatusCode(),
+                    e.getMessage(), e);
+            return false;
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return false;
+        }
+    }
 }

@@ -52,6 +52,18 @@ public class DeckService {
         return newDeck;
     }
 
+    public void externallyDisableDeck(@NotNull UUID deckId) {
+        logger.trace("Externally disabling deck... [deckId={}]", deckId);
+        Deck deck = deckRepository.findById(deckId).orElseThrow();
+        Boolean response = deckClient.disableDeck(deckId);
+        if (!response) {
+            throw new RuntimeException("Failed to externally disable user.");
+        }
+        deck.disableDeck();
+        deckRepository.save(deck);
+        logger.info("Deck externally disabled.");
+    }
+
     public Deck addExternallyCreatedDeck(@NotNull UUID deckId, @NotNull UUID userId) {
         logger.trace("Adding externally created Deck...");
 
