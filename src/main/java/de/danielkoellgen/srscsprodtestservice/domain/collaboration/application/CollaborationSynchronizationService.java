@@ -70,9 +70,7 @@ public class CollaborationSynchronizationService {
     private Collaboration mergeRemoteAndLocalCollaboration(
             @NotNull CollaborationResponseDto remoteCollaboration,
             @NotNull Optional<Collaboration> optLocalCollaboration) {
-        // TODO ("synchronize w/ remote")
-        Function<UUID, Deck> fetchSyncedDeck = deckId -> deckRepository
-                .findById(deckId).orElseThrow();
+        Function<UUID, Deck> fetchSyncedDeck = deckSynchronizationService::synchronizeDeck;
 
         if (optLocalCollaboration.isEmpty()) {
             List<Participant> participants = remoteCollaboration.participants()
