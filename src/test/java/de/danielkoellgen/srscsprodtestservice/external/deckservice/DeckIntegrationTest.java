@@ -1,5 +1,6 @@
 package de.danielkoellgen.srscsprodtestservice.external.deckservice;
 
+import de.danielkoellgen.srscsprodtestservice.domain.deck.application.DeckService;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.domain.Deck;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DeckIntegrationTest {
 
     private final UserService userService;
+    private final DeckService deckService;
 
     private final DeckClient deckClient;
 
@@ -28,9 +30,10 @@ public class DeckIntegrationTest {
     private final DeckRepository deckRepository;
 
     @Autowired
-    public DeckIntegrationTest(UserService userService, DeckClient deckClient,
+    public DeckIntegrationTest(UserService userService, DeckService deckService, DeckClient deckClient,
             UserRepository userRepository, DeckRepository deckRepository) {
         this.userService = userService;
+        this.deckService = deckService;
         this.deckClient = deckClient;
         this.userRepository = userRepository;
         this.deckRepository = deckRepository;
@@ -67,5 +70,25 @@ public class DeckIntegrationTest {
         assertThat(deck.getUser())
                 .usingRecursiveComparison()
                 .isEqualTo(user);
+    }
+
+    /*
+        Given an active deck,
+        when it's disabled,
+        then the response should verify that.
+     */
+    @Test
+    public void shouldAllowToExternallyDisableDecks() {
+        // given
+        User user = userService.externallyCreateUser(Username.makeRandomUsername(),
+                MailAddress.makeRandomMailAddress());
+        Deck deck = deckService.externallyCreateDeck(user.getUserId());
+
+        // when
+        Boolean response = deckClient.disableDeck(deck.getDeckId());
+
+        // then
+        assertThat(response)
+                .isTrue();
     }
 }
