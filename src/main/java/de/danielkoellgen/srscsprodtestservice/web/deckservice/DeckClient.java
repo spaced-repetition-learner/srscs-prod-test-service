@@ -116,4 +116,46 @@ public class DeckClient {
             return List.of();
         }
     }
+
+    public @NotNull Optional<DeckResponseDto> fetchDeck(@NotNull UUID deckId) {
+        String uri = deckServiceAddress + "/decks/" + deckId;
+        logger.trace("Calling GET {}...", uri);
+
+        for (int i = 0; i < 3; i ++) {
+            try {
+                if (i > 0) {
+                    logger.trace("Retrying after 500ms...");
+                    Thread.sleep(500);
+                }
+                DeckResponseDto responseDto = deckClient
+                        .get()
+                        .uri(uri)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                                clientResponse.createException().flatMap(Mono::error))
+                        .bodyToMono(DeckResponseDto.class)
+                        .block();
+                assert responseDto != null;
+
+                logger.debug("Request successful. {}", responseDto);
+
+                return Optional.of(responseDto);
+
+            } catch (WebClientResponseException e) {
+                if (!e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+                    logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                            e.getMessage(), e);
+                    return Optional.empty();
+                } else {
+                    logger.warn("Request failed externally. Resource NOT_FOUND.");
+                }
+
+            } catch (Exception e) {
+                logger.error("Request failed locally. {}.", e.getMessage(), e);
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
+    }
 }
