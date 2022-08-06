@@ -143,6 +143,34 @@ public class CollaborationCardIntegrationTest {
                 .hasSize(1);
     }
 
+    /*
+        Given an active collaboration of two users,
+        when user-2 LEAVES the collaboration and user-1 creates a new card,
+        then user-2 should NOT receive that card.
+     */
+    @Test
+    public void shouldNotReceiveClonedCardAfterCollaborationHasBeenLeft() throws InterruptedException {
+        // given
+        Collaboration collaboration = externallyCreateCollaboration(2);
+        Participant p1 = collaboration.getParticipants().get(0);
+        Participant p2 = collaboration.getParticipants().get(1);
+
+        // when
+        collaborationService.externallyEndCollaboration(collaboration.getCollaborationId(),
+                p2.getUserId());
+        cardService.externallyCreateEmptyDefaultCard(p1.getDeck().getDeckId());
+        Thread.sleep(1000);
+
+        // then
+        List<Card> p1Cards = cardSynchronizationService
+                .synchronizeCardsByDeck(p1.getDeck().getDeckId());
+        assertThat(p1Cards)
+                .hasSize(1);
+        List<Card> p2Cards = cardSynchronizationService
+                .synchronizeCardsByDeck(p2.getDeck().getDeckId());
+        assertThat(p2Cards)
+                .hasSize(0);
+    }
     private Collaboration externallyCreateCollaboration(Integer size) throws InterruptedException {
         List<UUID> usersById = IntStream.range(0, size)
                 .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
