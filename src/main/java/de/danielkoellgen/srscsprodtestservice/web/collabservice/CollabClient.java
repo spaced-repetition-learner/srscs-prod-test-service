@@ -143,9 +143,14 @@ public class CollabClient {
         try {
             collabClient.delete()
                     .uri(uri)
-                    .retrieve()
-                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error));
+                    .exchangeToMono(clientResponse -> {
+                        if (clientResponse.statusCode() == HttpStatus.OK) {
+                            return clientResponse.bodyToMono(HttpStatus.class);
+                        } else {
+                            return clientResponse.createException().flatMap(Mono::error);
+                        }
+                    })
+                    .block();
 
             logger.trace("Request successful. Collaboration ended.");
             return true;

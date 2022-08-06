@@ -66,6 +66,14 @@ public class Participant {
         participantStatus = ParticipantStatus.INVITATION_ACCEPTED;
     }
 
+    public void endParticipation() {
+        if (participantStatus == ParticipantStatus.INVITED) {
+            participantStatus = ParticipantStatus.INVITATION_DECLINED;
+        } else {
+            participantStatus = ParticipantStatus.TERMINATED;
+        }
+    }
+
     public void addDeck(@NotNull Deck deck) {
         this.deck = deck;
     }

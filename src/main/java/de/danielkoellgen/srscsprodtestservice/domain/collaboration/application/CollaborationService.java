@@ -93,6 +93,21 @@ public class CollaborationService {
         logger.debug("{}", participant);
     }
 
+    public void externallyEndCollaboration(@NotNull UUID collaborationId, @NotNull UUID userId) {
+        logger.trace("Externally ending participation in collaboration...");
+        Collaboration collaboration = collaborationRepository
+                .findById(collaborationId).orElseThrow();
+        Participant participant = collaboration
+                .findParticipant(userId).orElseThrow();
+        Boolean response = collabClient.endCollaboration(collaboration, participant);
+        if (!response) {
+            throw new RuntimeException("TODO");
+        }
+        participant.endParticipation();
+        participantRepository.save(participant);
+        logger.info("Participation in collaboration ended.");
+    }
+
     public void addDeckToParticipant(@NotNull UUID collaborationId, @NotNull UUID userId,
             @NotNull UUID deckId) {
         logger.trace("Updating Participant with Deck...");
