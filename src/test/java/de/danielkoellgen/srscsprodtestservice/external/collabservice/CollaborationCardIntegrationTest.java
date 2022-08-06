@@ -8,10 +8,12 @@ import de.danielkoellgen.srscsprodtestservice.domain.collaboration.application.C
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.application.CollaborationSynchronizationService;
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.domain.Collaboration;
 import de.danielkoellgen.srscsprodtestservice.domain.collaboration.repository.CollaborationRepository;
+import de.danielkoellgen.srscsprodtestservice.domain.deck.application.DeckService;
 import de.danielkoellgen.srscsprodtestservice.domain.deck.repository.DeckRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.MailAddress;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.ParticipantStatus;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.repository.ParticipantRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.user.application.UserService;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CollaborationCardIntegrationTest {
 
     private final UserService userService;
+    private final DeckService deckService;
     private final CardService cardService;
     private final CollaborationService collaborationService;
 
@@ -48,7 +51,7 @@ public class CollaborationCardIntegrationTest {
 
 
     @Autowired
-    public CollaborationCardIntegrationTest(UserService userService,
+    public CollaborationCardIntegrationTest(UserService userService, DeckService deckService,
             CollaborationService collaborationService, CardService cardService,
             CollaborationSynchronizationService collaborationSynchronizationService,
             CardSynchronizationService cardSynchronizationService, CardRepository cardRepository,
@@ -56,6 +59,7 @@ public class CollaborationCardIntegrationTest {
             ParticipantRepository participantRepository, DeckRepository deckRepository,
             UserRepository userRepository) {
         this.userService = userService;
+        this.deckService = deckService;
         this.cardService = cardService;
         this.collaborationService = collaborationService;
 
@@ -171,6 +175,33 @@ public class CollaborationCardIntegrationTest {
         assertThat(p2Cards)
                 .hasSize(0);
     }
+
+
+    /*
+        Given an active collaboration of two users,
+        when user-2 disables his deck,
+        then his participation in the collaboration should end.
+     */
+    @Test
+    public void shouldEndParticipationWhenDeckIsDisabled() throws InterruptedException {
+        // given
+        Collaboration collaboration = externallyCreateCollaboration(2);
+        Participant p1 = collaboration.getParticipants().get(0);
+        Participant p2 = collaboration.getParticipants().get(1);
+
+        // when
+        deckService.disableExternallyDisabledDeck(p2.getDeck().getDeckId());
+        Thread.sleep(1000);
+
+        // then
+        Collaboration updatedCollaboration = collaborationSynchronizationService
+                .synchronizeCollaboration(collaboration.getCollaborationId());
+        Participant p2Updated = collaboration.findParticipant(p2.getUserId()).orElseThrow();
+        assertThat(p2Updated.getParticipantStatus())
+                .isEqualTo(ParticipantStatus.TERMINATED);
+    }
+    
+
     private Collaboration externallyCreateCollaboration(Integer size) throws InterruptedException {
         List<UUID> usersById = IntStream.range(0, size)
                 .mapToObj(i -> userService.externallyCreateUser(Username.makeRandomUsername(),
