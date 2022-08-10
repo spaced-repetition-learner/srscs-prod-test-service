@@ -29,7 +29,7 @@ public class KafkaCollaborationEventConsumer {
         this.collaborationService = collaborationService;
     }
 
-    @KafkaListener(topics = {"${kafka.topic.collaboration}"}, id = "${kafka.groupId.collaboration}")
+//    @KafkaListener(topics = {"${kafka.topic.collaboration}"}, id = "${kafka.groupId.collaboration}")
     public void receive(@NotNull ConsumerRecord<String, String> event) throws JsonProcessingException {
         logger.trace("Receiving Collaboration-Event...");
         String eventName = getHeaderValue(event, "type");
