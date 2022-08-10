@@ -8,6 +8,7 @@ import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.DeckName;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.MailAddress;
 import de.danielkoellgen.srscsprodtestservice.domain.domainprimitive.Username;
 import de.danielkoellgen.srscsprodtestservice.domain.participant.domain.Participant;
+import de.danielkoellgen.srscsprodtestservice.domain.participant.repository.ParticipantRepository;
 import de.danielkoellgen.srscsprodtestservice.domain.user.application.UserService;
 import de.danielkoellgen.srscsprodtestservice.domain.user.domain.User;
 import de.danielkoellgen.srscsprodtestservice.domain.user.repository.UserRepository;
@@ -34,17 +35,20 @@ public class CollabIntegrationTest {
     private final UserRepository userRepository;
     private final DeckRepository deckRepository;
     private final CollaborationRepository collaborationRepository;
+    private final ParticipantRepository participantRepository;
 
     @Autowired
     public CollabIntegrationTest(UserService userService, DeckService deckService,
             CollabClient collabClient, UserRepository userRepository, DeckRepository deckRepository,
-            CollaborationRepository collaborationRepository) {
+            CollaborationRepository collaborationRepository,
+            ParticipantRepository participantRepository) {
         this.userService = userService;
         this.deckService = deckService;
         this.collabClient = collabClient;
         this.userRepository = userRepository;
         this.deckRepository = deckRepository;
         this.collaborationRepository = collaborationRepository;
+        this.participantRepository = participantRepository;
     }
 
     @BeforeEach
@@ -55,6 +59,7 @@ public class CollabIntegrationTest {
     @AfterEach
     public void cleanUp() {
         collaborationRepository.deleteAll();
+        participantRepository.deleteAll();
         deckRepository.deleteAll();
         userRepository.deleteAll();
     }

@@ -78,9 +78,9 @@ public class CollaborationCardIntegrationTest {
 
     @AfterEach
     public void cleanUp() {
-        cardRepository.deleteAll();
-        participantRepository.deleteAll();
         collaborationRepository.deleteAll();
+        participantRepository.deleteAll();
+        cardRepository.deleteAll();
         deckRepository.deleteAll();
         userRepository.deleteAll();
     }
@@ -125,8 +125,9 @@ public class CollaborationCardIntegrationTest {
         Card p1Card = cardService.externallyCreateEmptyDefaultCard(p1.getDeck().getDeckId());
 
         // when
+//        Thread.sleep(500); // prevent race condition
         cardService.externallyOverrideCardAsEmptyDefaultCard(p1Card.getCardId());
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         // then
         List<Card> p2Cards = cardSynchronizationService
@@ -176,7 +177,6 @@ public class CollaborationCardIntegrationTest {
                 .hasSize(0);
     }
 
-
     /*
         Given an active collaboration of two users,
         when user-2 disables his deck,
@@ -188,15 +188,16 @@ public class CollaborationCardIntegrationTest {
         Collaboration collaboration = externallyCreateCollaboration(2);
         Participant p1 = collaboration.getParticipants().get(0);
         Participant p2 = collaboration.getParticipants().get(1);
+        Thread.sleep(250);
 
         // when
-        deckService.disableExternallyDisabledDeck(p2.getDeck().getDeckId());
+        deckService.externallyDisableDeck(p2.getDeck().getDeckId());
         Thread.sleep(1000);
 
         // then
         Collaboration updatedCollaboration = collaborationSynchronizationService
                 .synchronizeCollaboration(collaboration.getCollaborationId());
-        Participant p2Updated = collaboration.findParticipant(p2.getUserId()).orElseThrow();
+        Participant p2Updated = updatedCollaboration.findParticipant(p2.getUserId()).orElseThrow();
         assertThat(p2Updated.getParticipantStatus())
                 .isEqualTo(ParticipantStatus.TERMINATED);
     }
@@ -209,6 +210,7 @@ public class CollaborationCardIntegrationTest {
                 .map(User::getUserId)
                 .toList();
         Collaboration collaboration = collaborationService.externallyCreateCollaboration(usersById);
+        Thread.sleep(500); // TODO resolve race condition on server-side
         usersById.forEach(userId -> {
             collaborationService.externallyAcceptCollaboration(collaboration.getCollaborationId(),
                     userId);
@@ -223,7 +225,7 @@ public class CollaborationCardIntegrationTest {
                     .synchronizeCollaboration(collaboration.getCollaborationId());
         } while (syncedCollaboration.getParticipants()
                 .stream()
-                .allMatch(x -> x.getDeck() != null));
+                .anyMatch(x -> x.getDeck() == null));
         return syncedCollaboration;
     }
 }
