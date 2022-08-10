@@ -28,7 +28,7 @@ public class Collaboration {
     private @NotNull UUID collaborationId;
 
     @Getter
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
     private @NotNull List<Participant> participants;
 
     @Transient

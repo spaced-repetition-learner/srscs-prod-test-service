@@ -34,7 +34,7 @@ public class Participant {
     @Column(name = "participant_status")
     private @NotNull ParticipantStatus participantStatus;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.EAGER)
     @JoinColumn(name = "deck_id")
     private @Nullable Deck deck;
 

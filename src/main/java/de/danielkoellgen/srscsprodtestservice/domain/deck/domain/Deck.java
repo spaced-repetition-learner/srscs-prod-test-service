@@ -24,7 +24,7 @@ public class Deck {
     @Type(type = "uuid-char")
     private @NotNull UUID deckId;
 
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     private @NotNull User user;
 

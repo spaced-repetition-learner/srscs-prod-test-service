@@ -22,7 +22,7 @@ public class Card {
     private @NotNull UUID cardId;
 
     @Getter
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.EAGER)
     @JoinColumn(name = "deck_id")
     private @NotNull Deck deck;
 
