@@ -18,7 +18,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,13 +35,24 @@ public class CardClient {
 
     private final String deckServiceAddress;
 
+    private final Integer retryAttempts;
+    private final Integer retryDelay;
+    private final Double retryJitter;
+
     private final Logger logger = LoggerFactory.getLogger(CardClient.class);
 
     @Autowired
     public CardClient(
-            @Value("${app.deckService.address}") String deckServiceAddress, WebClient webclient,
+            @Value("${app.deckService.address}") String deckServiceAddress,
+            @Value("${web.retry.attempts}") Integer retries,
+            @Value("${web.retry.delay}") Integer delay,
+            @Value("${web.retry.jitter}") Double jitter,
+            WebClient webclient,
             DeckRepository deckRepository) {
         this.cardClient = webclient;
+        this.retryAttempts = retries;
+        this.retryDelay = delay;
+        this.retryJitter = jitter;
         this.deckRepository = deckRepository;
         this.deckServiceAddress = deckServiceAddress;
     }
@@ -62,6 +75,8 @@ public class CardClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(CardResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
 
@@ -101,6 +116,8 @@ public class CardClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(CardResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
 
@@ -134,9 +151,16 @@ public class CardClient {
                     .uri(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestDto)
-                    .retrieve()
-                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error));
+                    .exchangeToMono(clientResponse -> {
+                        if (clientResponse.statusCode() == HttpStatus.OK) {
+                            return clientResponse.bodyToMono(HttpStatus.class);
+                        } else {
+                            return clientResponse.createException().flatMap(Mono::error);
+                        }
+                    })
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
+                    .block();
 
             logger.trace("Request successful. Card reviewed.");
 
@@ -162,6 +186,8 @@ public class CardClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(CardResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
 
@@ -197,6 +223,8 @@ public class CardClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToFlux(CardResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .collectList()
                     .block();
             assert responseDtos != null;

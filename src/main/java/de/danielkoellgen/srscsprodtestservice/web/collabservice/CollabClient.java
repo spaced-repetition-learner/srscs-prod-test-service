@@ -20,7 +20,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,12 +35,22 @@ public class CollabClient {
 
     private final String collabServiceAddress;
 
+    private final Integer retryAttempts;
+    private final Integer retryDelay;
+    private final Double retryJitter;
+
     private final Logger logger = LoggerFactory.getLogger(CollabClient.class);
 
     @Autowired
     public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress,
+            @Value("${web.retry.attempts}") Integer retries,
+            @Value("${web.retry.delay}") Integer delay,
+            @Value("${web.retry.jitter}") Double jitter,
             WebClient webClient) {
         this.collabClient = webClient;
+        this.retryAttempts = retries;
+        this.retryDelay = delay;
+        this.retryJitter = jitter;
         this.collabServiceAddress = collabServiceAddress;
     }
 
@@ -54,50 +66,41 @@ public class CollabClient {
         logger.trace("Calling POST {} to start a new Collaboration with {} Users...", uri, users.size());
         logger.debug("{}", requestDto);
 
-        for (int i = 0; i < 3; i++) {
-            try {
-                if (i > 0) {
-                    logger.trace("Retrying after 1000ms...");
-                    Thread.sleep(1000);
-                }
-                CollaborationResponseDto responseDto = collabClient.post()
-                        .uri(collabServiceAddress + "/collaborations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .bodyValue(requestDto)
-                        .retrieve()
-                        .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
-                                clientResponse.createException().flatMap(Mono::error))
-                        .bodyToMono(CollaborationResponseDto.class)
-                        .block();
-                assert responseDto != null;
+        try {
+            CollaborationResponseDto responseDto = collabClient.post()
+                    .uri(collabServiceAddress + "/collaborations")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestDto)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(CollaborationResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
+                    .block();
+            assert responseDto != null;
 
-                logger.trace("Request successful. Collaboration created.");
-                logger.debug("{}", responseDto);
+            logger.trace("Request successful. Collaboration created.");
+            logger.debug("{}", responseDto);
 
-                List<Participant> participants = responseDto.participants().stream()
-                        .map(x -> new Participant(
-                                users.stream()
-                                        .filter(y -> y.getUserId().equals(x.userId()))
-                                        .findFirst().orElseThrow(),
-                                x.getMappedParticipantStatus()))
-                        .toList();
-                return Optional.of(new Collaboration(responseDto.collaborationId(), participants));
+            List<Participant> participants = responseDto.participants().stream()
+                    .map(x -> new Participant(
+                            users.stream()
+                                    .filter(y -> y.getUserId().equals(x.userId()))
+                                    .findFirst().orElseThrow(),
+                            x.getMappedParticipantStatus()))
+                    .toList();
+            return Optional.of(new Collaboration(responseDto.collaborationId(), participants));
 
-            } catch (WebClientResponseException e) {
-                if (!e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
-                    logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(), e.getMessage(), e);
-                    return Optional.empty();
-                } else {
-                    logger.warn("Request failed externally. Resource NOT_FOUND.");
-                }
+        } catch (WebClientResponseException e) {
+            logger.warn("Request failed externally. {}: {}.", e.getStatusCode(), e.getMessage(), e);
+            return Optional.empty();
 
-            } catch (Exception e) {
-                logger.error("Request failed locally. {}.", e.getMessage(), e);
-                return Optional.empty();
-            }
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     public Boolean acceptCollaboration(@NotNull Collaboration collaboration,
@@ -116,6 +119,8 @@ public class CollabClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(ResponseEntity.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
 
             logger.trace("Request successful. Collaboration accepted.");
@@ -150,6 +155,8 @@ public class CollabClient {
                             return clientResponse.createException().flatMap(Mono::error);
                         }
                     })
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
 
             logger.trace("Request successful. Collaboration ended.");
@@ -179,6 +186,8 @@ public class CollabClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(CollaborationResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
 

@@ -17,7 +17,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,11 +32,22 @@ public class DeckClient {
 
     private final String deckServiceAddress;
 
+    private final Integer retryAttempts;
+    private final Integer retryDelay;
+    private final Double retryJitter;
+
     private final Logger logger = LoggerFactory.getLogger(DeckClient.class);
 
     @Autowired
-    public DeckClient(@Value("${app.deckService.address}") String deckServiceAddress, WebClient webClient) {
+    public DeckClient(@Value("${app.deckService.address}") String deckServiceAddress,
+            @Value("${web.retry.attempts}") Integer retries,
+            @Value("${web.retry.delay}") Integer delay,
+            @Value("${web.retry.jitter}") Double jitter,
+            WebClient webClient) {
         this.deckClient = webClient;
+        this.retryAttempts = retries;
+        this.retryDelay = delay;
+        this.retryJitter = jitter;
         this.deckServiceAddress = deckServiceAddress;
     }
 
@@ -46,43 +59,33 @@ public class DeckClient {
                 user.getUsername().getUsername());
         logger.debug("{}", requestDto);
 
-        for (int i = 0; i < 3; i++) {
-            try {
-                if (i > 0) {
-                    logger.trace("Retrying after 500ms...");
-                    Thread.sleep(500);
-                }
-                DeckResponseDto responseDto = deckClient.post().uri(uri)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .bodyValue(requestDto)
-                        .retrieve()
-                        .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
-                                clientResponse.createException().flatMap(Mono::error))
-                        .bodyToMono(DeckResponseDto.class)
-                        .block();
-                assert responseDto != null;
+        try {
+            DeckResponseDto responseDto = deckClient.post().uri(uri)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .bodyValue(requestDto)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(DeckResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
+                    .block();
+            assert responseDto != null;
 
-                logger.trace("Request successful. Deck created.");
-                logger.debug("{}", responseDto);
+            logger.trace("Request successful. Deck created.");
+            logger.debug("{}", responseDto);
 
-                return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
+            return Optional.of(new Deck(responseDto.deckId(), user, responseDto.isActive()));
 
-            } catch (WebClientResponseException e) {
-                if (!e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
-                    logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(),
-                            e.getMessage(), e);
-                    return Optional.empty();
-                } else {
-                    logger.warn("Request failed externally. Resource NOT_FOUND.");
-                }
+        } catch (WebClientResponseException e) {
+            logger.warn("Request failed externally. {}: {}.", e.getStatusCode(), e.getMessage(), e);
+            return Optional.empty();
 
-            } catch (Exception e) {
-                logger.error("Request failed locally. {}.", e.getMessage(), e);
-                return Optional.empty();
-            }
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     public @NotNull List<DeckResponseDto> fetchDeckByUser(@NotNull UUID userId) {
@@ -98,6 +101,8 @@ public class DeckClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToFlux(DeckResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .collectList()
                     .block();
             assert deckResponseDtos != null;
@@ -121,42 +126,31 @@ public class DeckClient {
         String uri = deckServiceAddress + "/decks/" + deckId;
         logger.trace("Calling GET {}...", uri);
 
-        for (int i = 0; i < 3; i ++) {
-            try {
-                if (i > 0) {
-                    logger.trace("Retrying after 500ms...");
-                    Thread.sleep(500);
-                }
-                DeckResponseDto responseDto = deckClient
-                        .get()
-                        .uri(uri)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .retrieve()
-                        .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
-                                clientResponse.createException().flatMap(Mono::error))
-                        .bodyToMono(DeckResponseDto.class)
-                        .block();
-                assert responseDto != null;
+        try {
+            DeckResponseDto responseDto = deckClient
+                    .get()
+                    .uri(uri)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(DeckResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
+                    .block();
+            assert responseDto != null;
+            logger.debug("Request successful. {}", responseDto);
+            return Optional.of(responseDto);
 
-                logger.debug("Request successful. {}", responseDto);
+        } catch (WebClientResponseException e) {
+            logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
+            return Optional.empty();
 
-                return Optional.of(responseDto);
-
-            } catch (WebClientResponseException e) {
-                if (!e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
-                    logger.warn("Request failed externally. {}: {}.", e.getRawStatusCode(),
-                            e.getMessage(), e);
-                    return Optional.empty();
-                } else {
-                    logger.warn("Request failed externally. Resource NOT_FOUND.");
-                }
-
-            } catch (Exception e) {
-                logger.error("Request failed locally. {}.", e.getMessage(), e);
-                return Optional.empty();
-            }
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     public @NotNull Boolean disableDeck(@NotNull UUID deckId) {
@@ -173,6 +167,8 @@ public class DeckClient {
                             return clientResponse.createException().flatMap(Mono::error);
                         }
                     })
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             return true;
 

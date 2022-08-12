@@ -19,7 +19,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,11 +33,22 @@ public class UserClient {
 
     private final String userServiceAddress;
 
+    private final Integer retryAttempts;
+    private final Integer retryDelay;
+    private final Double retryJitter;
+
     private final Logger logger = LoggerFactory.getLogger(UserClient.class);
 
     @Autowired
-    public UserClient(@Value("${app.userService.address}") String userServiceAddress, WebClient webClient) {
+    public UserClient(@Value("${app.userService.address}") String userServiceAddress,
+            @Value("${web.retry.attempts}") Integer retries,
+            @Value("${web.retry.delay}") Integer delay,
+            @Value("${web.retry.jitter}") Double jitter,
+            WebClient webClient) {
         this.userClient = webClient;
+        this.retryAttempts = retries;
+        this.retryJitter = jitter;
+        this.retryDelay = delay;
         this.userServiceAddress = userServiceAddress;
     }
 
@@ -56,6 +69,8 @@ public class UserClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(UserResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
 
@@ -65,8 +80,7 @@ public class UserClient {
             return Optional.of(new User(responseDto.userId(), username, responseDto.isActive()));
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
-                    e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
@@ -88,6 +102,8 @@ public class UserClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(UserResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
 
@@ -97,8 +113,7 @@ public class UserClient {
             return Optional.of(responseDto);
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
-                    e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
@@ -123,12 +138,13 @@ public class UserClient {
                             return clientResponse.createException().flatMap(Mono::error);
                         }
                     })
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             return true;
 
         } catch (WebClientResponseException e) {
-            logger.error("Request failed externally. {}: {}.", e.getStatusCode(),
-                    e.getMessage(), e);
+            logger.error("Request failed externally. {}: {}.", e.getStatusCode(), e.getMessage(), e);
             return false;
 
         } catch (Exception e) {
