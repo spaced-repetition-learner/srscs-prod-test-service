@@ -20,7 +20,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,11 +35,22 @@ public class CollabClient {
 
     private final String collabServiceAddress;
 
+    private final Integer retryAttempts;
+    private final Integer retryDelay;
+    private final Double retryJitter;
+
     private final Logger logger = LoggerFactory.getLogger(CollabClient.class);
 
     @Autowired
-    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress) {
-        this.collabClient = WebClient.create();
+    public CollabClient(@Value("${app.collabService.address}") String collabServiceAddress,
+            @Value("${web.retry.attempts}") Integer retries,
+            @Value("${web.retry.delay}") Integer delay,
+            @Value("${web.retry.jitter}") Double jitter,
+            WebClient webClient) {
+        this.collabClient = webClient;
+        this.retryAttempts = retries;
+        this.retryDelay = delay;
+        this.retryJitter = jitter;
         this.collabServiceAddress = collabServiceAddress;
     }
 
@@ -47,12 +60,11 @@ public class CollabClient {
                 users.stream()
                         .map(x -> x.getUsername().getUsername())
                         .toList(),
-                collaborationName.getName()
-        );
+                collaborationName.getName());
+        String uri = collabServiceAddress + "/collaborations";
 
-        logger.debug("Requesting Collab-Service to start a new Collaboration. Address is POST {}",
-                collabServiceAddress+"/collaborations");
-        logger.trace("{}", requestDto);
+        logger.trace("Calling POST {} to start a new Collaboration with {} Users...", uri, users.size());
+        logger.debug("{}", requestDto);
 
         try {
             CollaborationResponseDto responseDto = collabClient.post()
@@ -64,71 +76,134 @@ public class CollabClient {
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(CollaborationResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
             assert responseDto != null;
-            logger.trace("{}", responseDto);
+
+            logger.trace("Request successful. Collaboration created.");
+            logger.debug("{}", responseDto);
 
             List<Participant> participants = responseDto.participants().stream()
                     .map(x -> new Participant(
                             users.stream()
                                     .filter(y -> y.getUserId().equals(x.userId()))
-                                    .findFirst().get(),
-                            x.getMappedParticipantStatus()
-                    )).toList();
+                                    .findFirst().orElseThrow(),
+                            x.getMappedParticipantStatus()))
+                    .toList();
             return Optional.of(new Collaboration(responseDto.collaborationId(), participants));
 
         } catch (WebClientResponseException e) {
+            logger.warn("Request failed externally. {}: {}.", e.getStatusCode(), e.getMessage(), e);
             return Optional.empty();
 
         } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return Optional.empty();
         }
     }
 
-    public Boolean acceptCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
-        UUID collabId = collaboration.getCollaborationId();
-        UUID participantId = participant.getUser().getUserId();
+    public Boolean acceptCollaboration(@NotNull Collaboration collaboration,
+            @NotNull Participant participant) {
+        UUID collaborationId = collaboration.getCollaborationId();
+        UUID participantId = participant.getUserId();
+        String uri = collabServiceAddress+"/collaborations/"+collaborationId+"/participants/"+participantId+"/state";
 
-        logger.debug("Requesting Collaboration-Service to accept the Participation. Address is POST {}",
-                collabServiceAddress+"/collaborations/"+collabId+"/participants/"+participantId+"/state");
+        logger.trace("Calling POST {} to accept the Collaboration.", uri);
 
         try {
             collabClient.post()
-                    .uri(collabServiceAddress+"/collaborations/"+collabId+"/participants/"+participantId+"/state")
+                    .uri(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .onStatus(httpStatus -> httpStatus != HttpStatus.CREATED, clientResponse ->
                             clientResponse.createException().flatMap(Mono::error))
                     .bodyToMono(ResponseEntity.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
                     .block();
 
-            logger.debug("Request successful.");
+            logger.trace("Request successful. Collaboration accepted.");
             return true;
+
         } catch (WebClientResponseException e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return false;
 
         } catch (Exception e) {
-            logger.error("Request failed. {}", e.getMessage());
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return false;
         }
     }
 
-    public Boolean endCollaboration(@NotNull Collaboration collaboration, @NotNull Participant participant) {
-        UUID collabId = collaboration.getCollaborationId();
-        UUID participantId = participant.getUser().getUserId();
+    public Boolean endCollaboration(@NotNull Collaboration collaboration,
+            @NotNull Participant participant) {
+        UUID collaborationId = collaboration.getCollaborationId();
+        UUID participantId = participant.getUserId();
+        String uri = collabServiceAddress + "/collaborations/"+collaborationId+"/participants/"+participantId;
+
+        logger.trace("Calling DELETE {} to end the Collaboration.", uri);
+
         try {
-            collabClient.delete().uri(collabServiceAddress + "/collaborations/"+collabId+"/participants/"+participantId)
-                    .retrieve()
-                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
-                            clientResponse.createException().flatMap(Mono::error));
+            collabClient.delete()
+                    .uri(uri)
+                    .exchangeToMono(clientResponse -> {
+                        if (clientResponse.statusCode() == HttpStatus.OK) {
+                            return clientResponse.bodyToMono(HttpStatus.class);
+                        } else {
+                            return clientResponse.createException().flatMap(Mono::error);
+                        }
+                    })
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
+                    .block();
+
+            logger.trace("Request successful. Collaboration ended.");
             return true;
 
         } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
             return false;
 
         } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
             return false;
+        }
+    }
+
+    public @NotNull Optional<CollaborationResponseDto> fetchCollaboration(@NotNull UUID collaborationId) {
+        String uri = collabServiceAddress + "/collaborations/" + collaborationId;
+
+        logger.trace("Calling GET {}", uri);
+
+        try {
+            CollaborationResponseDto responseDto = collabClient
+                    .get()
+                    .uri(uri)
+                    .retrieve()
+                    .onStatus(httpStatus -> httpStatus != HttpStatus.OK, clientResponse ->
+                            clientResponse.createException().flatMap(Mono::error))
+                    .bodyToMono(CollaborationResponseDto.class)
+                    .retryWhen(Retry.backoff(retryAttempts, Duration.ofSeconds(retryDelay))
+                            .jitter(retryJitter))
+                    .block();
+            assert responseDto != null;
+
+            logger.trace("Request successful. Collaboration {} fetched.", collaborationId);
+            logger.debug("{}", responseDto);
+
+            return Optional.of(responseDto);
+
+        } catch (WebClientResponseException e) {
+            logger.error("Request failed externally. {}: {}.", e.getRawStatusCode(),
+                    e.getMessage(), e);
+            return Optional.empty();
+
+        } catch (Exception e) {
+            logger.error("Request failed locally. {}.", e.getMessage(), e);
+            return Optional.empty();
         }
     }
 }

@@ -13,7 +13,7 @@ abstract public class AbstractConsumerEvent implements ConsumerEvent {
 
     protected final @NotNull UUID eventId;
 
-    protected final @NotNull UUID transactionId;
+    protected final @NotNull String transactionId;
 
     protected       @Nullable UUID correlationId;
 
@@ -27,7 +27,7 @@ abstract public class AbstractConsumerEvent implements ConsumerEvent {
 
     public AbstractConsumerEvent(@NotNull ConsumerRecord<String, String> event) {
         this.eventId = UUID.fromString(getHeaderValue(event, "eventId"));
-        this.transactionId = UUID.fromString(getHeaderValue(event, "transactionId"));
+        this.transactionId = getHeaderValue(event, "transactionId");
         try {
             this.correlationId = UUID.fromString(getHeaderValue(event, "correlationId"));
         } catch (Exception e) {
@@ -51,7 +51,7 @@ abstract public class AbstractConsumerEvent implements ConsumerEvent {
     }
 
     @Override
-    public @NotNull UUID getTransactionId() {
+    public @NotNull String getTransactionId() {
         return transactionId;
     }
 
