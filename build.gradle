@@ -39,6 +39,7 @@ dependencies {
     implementation 'mysql:mysql-connector-java:8.0.29'
 //    implementation 'org.mariadb.jdbc:mariadb-java-client:3.0.3'
     implementation 'org.jetbrains:annotations:23.0.0'
+    implementation 'org.javatuples:javatuples:1.2'
     if (osdetector.arch.equals("aarch_64")) {
         implementation 'io.netty:netty-resolver-dns-native-macos:4.1.72.Final:osx-aarch_64'
     }
